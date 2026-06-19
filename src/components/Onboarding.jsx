@@ -166,7 +166,7 @@ function mapToData(d) {
 
   const expMap = { Rent: true, Food: true, Transport: true, Fun: false };
   const expenses = Object.entries(d.exp).filter(([, v]) => v > 0)
-    .map(([k, v]) => ({ id: gid(), name: k === "Fun" ? "Fun & lifestyle" : k, amt: v, ess: expMap[k] }));
+    .map(([k, v]) => ({ id: gid(), name: k === "Fun" ? "Fun & lifestyle" : k, amt: v, ess: expMap[k], budget: v }));
 
   const savMap = {
     Cash: { kind: "Liquid", ret: 1 },

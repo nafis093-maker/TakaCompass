@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from "react";
 import Marketplace from "./components/Marketplace.jsx";
 import {
   Wallet, PiggyBank, Target, Store, Sparkles, LineChart,
-  TrendingUp, ShieldCheck, Scale, Coins, Plus, LogOut,
+  TrendingUp, ShieldCheck, Scale, Coins, Plus, LogOut, Gauge,
 } from "lucide-react";
 
 const TAB_ICONS = {
-  "Cash flow": Wallet, "Net worth": PiggyBank, "Goals": Target,
+  "Cash flow": Wallet, "Budget": Gauge, "Net worth": PiggyBank, "Goals": Target,
   "Marketplace": Store, "Insights": Sparkles, "Projection": LineChart,
 };
 
@@ -89,12 +89,12 @@ const seed = {
     { id: uid(), name: "Workshop business", amt: 60000 },
   ],
   expenses: [
-    { id: uid(), name: "Rent", amt: 25000, ess: true },
-    { id: uid(), name: "Food & groceries", amt: 25000, ess: true },
-    { id: uid(), name: "Utilities & internet", amt: 8000, ess: true },
-    { id: uid(), name: "Transport", amt: 10000, ess: true },
-    { id: uid(), name: "Family support", amt: 15000, ess: true },
-    { id: uid(), name: "Lifestyle & dining", amt: 12000, ess: false },
+    { id: uid(), name: "Rent", amt: 25000, ess: true, budget: 25000 },
+    { id: uid(), name: "Food & groceries", amt: 25000, ess: true, budget: 22000 },
+    { id: uid(), name: "Utilities & internet", amt: 8000, ess: true, budget: 9000 },
+    { id: uid(), name: "Transport", amt: 10000, ess: true, budget: 12000 },
+    { id: uid(), name: "Family support", amt: 15000, ess: true, budget: 15000 },
+    { id: uid(), name: "Lifestyle & dining", amt: 12000, ess: false, budget: 9000 },
   ],
   assets: [
     { id: uid(), name: "Cash & current a/c", amt: 400000, ret: 1, kind: "Liquid" },
@@ -114,7 +114,7 @@ const seed = {
   ],
 };
 
-const TABS = ["Cash flow", "Net worth", "Goals", "Marketplace", "Insights", "Projection"];
+const TABS = ["Cash flow", "Budget", "Net worth", "Goals", "Marketplace", "Insights", "Projection"];
 
 export default function Dashboard({ initial, onPersist, user, onSignOut }) {
   const [rates, setRates] = useState(BD);
@@ -286,7 +286,7 @@ export default function Dashboard({ initial, onPersist, user, onSignOut }) {
 
           <Panel title="Money out" accent="#f06a6a"
             foot={<b className="ptot bad">{tk(totalExp + totalEMI)}/mo</b>}
-            onAdd={() => setExpenses((r) => [...r, { id: uid(), name: "New expense", amt: 0, ess: true }])}>
+            onAdd={() => setExpenses((r) => [...r, { id: uid(), name: "New expense", amt: 0, ess: true, budget: 0 }])}>
             {expenses.map((r) => (
               <Line key={r.id} name={r.name} amt={r.amt}
                 onName={(v) => mE(r.id, "name", v)} onAmt={(v) => mE(r.id, "amt", v)} onDel={() => rmRow(setExpenses)(r.id)}
@@ -304,7 +304,13 @@ export default function Dashboard({ initial, onPersist, user, onSignOut }) {
             <span className="op">=</span>
             <div className={"fb big " + (surplus >= 0 ? "good" : "bad")}><span>Surplus / month</span><b>{tk(surplus)}</b></div>
           </div>
+
+          <Sankey income={income} expenses={expenses} loans={loans} surplus={surplus} />
         </div>
+      )}
+
+      {tab === "Budget" && (
+        <BudgetView expenses={expenses} mE={mE} />
       )}
 
       {tab === "Net worth" && (
@@ -353,6 +359,8 @@ export default function Dashboard({ initial, onPersist, user, onSignOut }) {
               ))}
             </div>
           </div>
+
+          <NetWorthTrend netWorth={netWorth} email={user?.email} />
         </div>
       )}
 
@@ -600,6 +608,163 @@ function Projection({ netWorth, surplus, blendedRet, inflation }) {
       </div>
       {surplus <= 0 && <p className="projwarn">Your current surplus is {tk(surplus)} — with nothing to invest, this curve only reflects growth (or drawdown) on existing assets. Closing the cash-flow gap is what bends it upward.</p>}
       <p className="projnote">A planning projection, not a forecast — real returns vary year to year. Assumes steady contributions and return, and that existing debt amortises on schedule.</p>
+    </div>
+  );
+}
+
+// ---------------- Monarch-style: cash-flow Sankey ----------------
+function Sankey({ income, expenses, loans, surplus }) {
+  const sources = income.filter((i) => i.amt > 0).map((i) => ({ name: i.name, amt: i.amt }));
+  const totalIn = sources.reduce((s, x) => s + x.amt, 0) || 1;
+  const outs = [
+    ...expenses.filter((e) => e.amt > 0).map((e) => ({ name: e.name, amt: e.amt, color: e.ess ? "#0891b2" : "#f59f0a" })),
+    ...loans.filter((l) => l.emi > 0).map((l) => ({ name: l.name + " EMI", amt: l.emi, color: "#f06a6a" })),
+  ];
+  if (surplus > 0) outs.push({ name: "Surplus → savings", amt: surplus, color: "#0ea372" });
+  const totalOut = outs.reduce((s, x) => s + x.amt, 0) || 1;
+  if (sources.length === 0 || outs.length === 0) return null;
+
+  const W = 720, pad = 16, nodeW = 13, gap = 9;
+  const rows = Math.max(sources.length, outs.length);
+  const H = Math.max(230, rows * 50 + pad * 2);
+  const xL = pad, xHubL = W / 2 - nodeW / 2, xHubR = W / 2 + nodeW / 2, xR = W - pad - nodeW;
+  const usableHub = H - pad * 2;
+
+  const lay = (items, total) => {
+    const usable = H - pad * 2 - gap * (items.length - 1);
+    let y = pad;
+    return items.map((it) => { const h = Math.max(4, (it.amt / total) * usable); const s = { ...it, y, h }; y += h + gap; return s; });
+  };
+  const L = lay(sources, totalIn);
+  const R = lay(outs, totalOut);
+  // hub slices (no gaps, fills H)
+  let hy = pad; const hubL = sources.map((s) => { const h = (s.amt / totalIn) * usableHub; const o = { y: hy, h }; hy += h; return o; });
+  hy = pad; const hubR = outs.map((o) => { const h = (o.amt / totalOut) * usableHub; const r = { y: hy, h }; hy += h; return r; });
+
+  const ribbon = (xa, ya0, ya1, xb, yb0, yb1) => {
+    const mx = (xa + xb) / 2;
+    return `M ${xa} ${ya0} C ${mx} ${ya0}, ${mx} ${yb0}, ${xb} ${yb0} L ${xb} ${yb1} C ${mx} ${yb1}, ${mx} ${ya1}, ${xa} ${ya1} Z`;
+  };
+
+  return (
+    <div className="alloc sankey-wrap">
+      <div className="allochd">Where your money flows — income in, spending out 🌊</div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="sankey" preserveAspectRatio="xMidYMid meet">
+        {L.map((s, i) => (
+          <path key={"li" + i} className="rib green" d={ribbon(xL + nodeW, s.y, s.y + s.h, xHubL, hubL[i].y, hubL[i].y + hubL[i].h)} />
+        ))}
+        {R.map((o, i) => (
+          <path key={"ro" + i} className="rib" style={{ fill: o.color }} d={ribbon(xHubR, hubR[i].y, hubR[i].y + hubR[i].h, xR, R[i].y, R[i].y + R[i].h)} />
+        ))}
+        {L.map((s, i) => (
+          <g key={"ln" + i}>
+            <rect x={xL} y={s.y} width={nodeW} height={s.h} rx="3" className="snode green" />
+            <text x={xL + nodeW + 7} y={s.y + s.h / 2 - 3} className="slbl">{s.name}</text>
+            <text x={xL + nodeW + 7} y={s.y + s.h / 2 + 11} className="samt">{tk(s.amt)}</text>
+          </g>
+        ))}
+        <rect x={xHubL} y={pad} width={nodeW} height={usableHub} rx="3" className="snode hub" />
+        {R.map((o, i) => (
+          <g key={"rn" + i}>
+            <rect x={xR} y={o.y} width={nodeW} height={o.h} rx="3" style={{ fill: o.color }} />
+            <text x={xR - 7} y={o.y + o.h / 2 - 3} className="slbl" textAnchor="end">{o.name}</text>
+            <text x={xR - 7} y={o.y + o.h / 2 + 11} className="samt" textAnchor="end">{tk(o.amt)}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+// ---------------- Monarch-style: category budgets ----------------
+function BudgetView({ expenses, mE }) {
+  const totalSpent = expenses.reduce((s, e) => s + e.amt, 0);
+  const totalBudget = expenses.reduce((s, e) => s + (e.budget || 0), 0);
+  const pctUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const left = totalBudget - totalSpent;
+  return (
+    <div className="budget">
+      <div className="bud-hero">
+        <div>
+          <span className="bud-hlabel">Spent this month</span>
+          <span className="bud-hval">{tk(totalSpent)} <small>of {tk(totalBudget)} budgeted</small></span>
+        </div>
+        <div className={"bud-left " + (left >= 0 ? "good" : "bad")}>
+          <span>{left >= 0 ? "Left to spend" : "Over budget"}</span>
+          <b>{tk(Math.abs(left))}</b>
+        </div>
+      </div>
+      <div className="bud-herobar"><span className={pctUsed > 100 ? "over" : pctUsed > 85 ? "near" : ""} style={{ width: Math.min(100, pctUsed) + "%" }} /></div>
+
+      <div className="bud-list">
+        {expenses.map((e) => {
+          const b = e.budget || 0;
+          const p = b > 0 ? (e.amt / b) * 100 : 0;
+          const state = p > 100 ? "over" : p > 85 ? "near" : "under";
+          return (
+            <div className="bud-row" key={e.id}>
+              <div className="bud-rtop">
+                <span className="bud-name">{e.name}</span>
+                <span className="bud-nums"><b>{tk(e.amt)}</b><span className="bud-of">of</span>
+                  <span className="bud-set">৳<input value={b || ""} placeholder="—" onChange={(ev) => mE(e.id, "budget", ev.target.value)} /></span>
+                </span>
+              </div>
+              <div className="bud-bar"><span className={"bf " + state} style={{ width: Math.min(100, p) + "%" }} /></div>
+              <div className="bud-meta">{b > 0 ? (p > 100 ? `Over by ${tk(e.amt - b)}` : `${tk(b - e.amt)} left · ${fmt(p, 0)}% used`) : "Tap to set a budget"}</div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="bud-note">Category budgeting, Monarch-style: set a monthly cap per category and watch it fill. Spend amounts are shared with the Cash flow tab; tweak budgets here.</p>
+    </div>
+  );
+}
+
+// ---------------- Monarch-style: net worth over time ----------------
+function NetWorthTrend({ netWorth, email }) {
+  const [hist, setHist] = useState([]);
+  useEffect(() => {
+    const key = `taka:nwhist:${email || "guest"}`;
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(key)) || []; } catch { arr = []; }
+    const today = new Date().toISOString().slice(0, 10);
+    const i = arr.findIndex((p) => p.d === today);
+    if (i >= 0) arr[i].v = netWorth; else arr.push({ d: today, v: netWorth });
+    arr = arr.slice(-24);
+    try { localStorage.setItem(key, JSON.stringify(arr)); } catch { /* ignore */ }
+    setHist(arr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (hist.length < 2) {
+    return (
+      <div className="alloc nwtrend">
+        <div className="allochd">Net worth over time</div>
+        <p className="nwt-empty">📈 Today's snapshot ({big(netWorth)}) is saved. This chart fills in as you come back and update your numbers — a real history built from your own data, just like Monarch's net-worth tracker.</p>
+      </div>
+    );
+  }
+  const W = 720, H = 190, PL = 66, PR = 16, PT = 16, PB = 26;
+  const vals = hist.map((p) => p.v);
+  const yMax = Math.max(...vals, 1), yMin = Math.min(...vals, 0);
+  const xx = (i) => PL + (i / (hist.length - 1)) * (W - PL - PR);
+  const yy = (v) => PT + (1 - (v - yMin) / (yMax - yMin || 1)) * (H - PT - PB);
+  const line = hist.map((p, i) => (i ? "L" : "M") + xx(i).toFixed(1) + " " + yy(p.v).toFixed(1)).join(" ");
+  const area = `M ${xx(0)} ${yy(yMin)} ` + hist.map((p, i) => "L " + xx(i).toFixed(1) + " " + yy(p.v).toFixed(1)).join(" ") + ` L ${xx(hist.length - 1)} ${yy(yMin)} Z`;
+  const delta = hist[hist.length - 1].v - hist[0].v;
+
+  return (
+    <div className="alloc nwtrend">
+      <div className="allochd">Net worth over time <b className={delta >= 0 ? "good" : "bad"}>{(delta >= 0 ? "+" : "−") + big(Math.abs(delta))}</b> since {hist[0].d}</div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart">
+        {[0, 0.5, 1].map((t, i) => {
+          const v = yMin + t * (yMax - yMin);
+          return <g key={i}><line x1={PL} x2={W - PR} y1={yy(v)} y2={yy(v)} className="grid" /><text x={PL - 8} y={yy(v) + 4} className="ytk" textAnchor="end">{big(v)}</text></g>;
+        })}
+        <path d={area} className="nwt-area" />
+        <path d={line} className="nwt-line" />
+        {hist.map((p, i) => <circle key={i} cx={xx(i)} cy={yy(p.v)} r={i === hist.length - 1 ? 4.5 : 2.5} className="nwt-dot" />)}
+      </svg>
     </div>
   );
 }
@@ -892,4 +1057,44 @@ input,select,button{font-family:inherit}
   background:linear-gradient(110deg,transparent 30%,rgba(46,207,143,.14) 50%,transparent 70%);background-size:220% 100%;animation:sheen 3.2s ease-in-out infinite}
 .mkt-card{position:relative;overflow:hidden}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.tabs{flex-wrap:wrap}
+.sankey-wrap{margin-top:14px}
+.sankey{width:100%;height:auto;margin-top:6px}
+.rib{fill:#0891b2;opacity:.32;transition:opacity .2s}
+.rib.green{fill:#34d399;opacity:.34}
+.sankey:hover .rib{opacity:.22}.sankey .rib:hover{opacity:.6}
+.snode{fill:#0891b2}.snode.green{fill:#34d399}.snode.hub{fill:#0ea372}
+.slbl{fill:var(--tx);font-size:11.5px;font-weight:600}
+.samt{fill:var(--mut);font-size:10.5px;font-family:ui-monospace,monospace}
+.budget{margin-top:14px}
+.bud-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:var(--p1);border:1px solid var(--ln);border-radius:20px;padding:16px 18px;box-shadow:0 14px 36px -30px #0ea372}
+.bud-hlabel{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600;display:block}
+.bud-hval{font-size:24px;font-weight:800;font-family:ui-monospace,monospace}.bud-hval small{font-size:13px;color:var(--mut);font-weight:600}
+.bud-left{text-align:right}.bud-left span{font-size:11.5px;color:var(--mut);display:block}.bud-left b{font-size:22px;font-family:ui-monospace,monospace}
+.bud-left.good b{color:var(--good)}.bud-left.bad b{color:var(--bad)}
+.bud-herobar{height:10px;background:var(--p2);border-radius:999px;overflow:hidden;margin:12px 0 16px}
+.bud-herobar span{display:block;height:100%;background:linear-gradient(90deg,#0ea372,#34d399);border-radius:999px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
+.bud-herobar span.near{background:linear-gradient(90deg,#f59f0a,#f7c267)}.bud-herobar span.over{background:linear-gradient(90deg,#f06a6a,#fa5a7d)}
+.bud-list{display:flex;flex-direction:column;gap:11px}
+.bud-row{background:var(--p1);border:1px solid var(--ln);border-radius:16px;padding:13px 16px;box-shadow:0 10px 28px -26px #0ea372;animation:fadeUp .4s both}
+.bud-list .bud-row:nth-child(2){animation-delay:.04s}.bud-list .bud-row:nth-child(3){animation-delay:.08s}.bud-list .bud-row:nth-child(4){animation-delay:.12s}.bud-list .bud-row:nth-child(5){animation-delay:.16s}.bud-list .bud-row:nth-child(6){animation-delay:.2s}
+.bud-rtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.bud-name{font-weight:700;font-size:14px}
+.bud-nums{display:flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;font-size:13px}
+.bud-nums b{font-weight:700}.bud-of{color:var(--mut);font-size:11px}
+.bud-set{display:inline-flex;align-items:center;color:var(--mut);background:var(--p2);border:1px solid var(--ln);border-radius:9px;padding:3px 8px}
+.bud-set input{width:64px;border:none;background:none;text-align:right;font-family:ui-monospace,monospace;font-size:13px;color:var(--tx);font-weight:700}
+.bud-set input:focus{outline:none}
+.bud-bar{height:9px;background:var(--p2);border-radius:999px;overflow:hidden}
+.bud-bar .bf{display:block;height:100%;border-radius:999px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
+.bud-bar .bf.under{background:linear-gradient(90deg,#0ea372,#34d399)}
+.bud-bar .bf.near{background:linear-gradient(90deg,#f59f0a,#f7c267)}
+.bud-bar .bf.over{background:linear-gradient(90deg,#f06a6a,#fa5a7d)}
+.bud-meta{font-size:11.5px;color:var(--mut);margin-top:6px}
+.bud-note{font-size:11.5px;color:var(--mut);margin:14px 0 0;line-height:1.55}
+.nwtrend{margin-top:14px}
+.nwt-empty{font-size:13px;color:var(--mut);line-height:1.6;margin:8px 0 0}
+.nwt-area{fill:rgba(14,163,114,.12);stroke:none}
+.nwt-line{fill:none;stroke:#0ea372;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:2200;animation:drawLine 1.1s ease-out both}
+.nwt-dot{fill:#0ea372;stroke:var(--p1);stroke-width:2}
 `;
