@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ExternalLink, Landmark, PiggyBank } from "lucide-react";
 import { INST, PRODUCTS, BORROW_CATS, SAVE_CATS, UPDATED } from "../data/products.js";
 
 const fmt = (n, d = 0) => (isNaN(n) ? "—" : n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }));
@@ -63,8 +64,8 @@ export default function Marketplace({ idleCash = 0, goalLoan, rates }) {
           </p>
         </div>
         <div className="mkt-modes">
-          <button className={"mm" + (mode === "borrow" ? " on" : "")} onClick={() => setMode("borrow")}>Borrow</button>
-          <button className={"mm" + (mode === "save" ? " on" : "")} onClick={() => setMode("save")}>Save / Deposit</button>
+          <button className={"mm" + (mode === "borrow" ? " on" : "")} onClick={() => setMode("borrow")}><Landmark size={15} strokeWidth={2.4} /> Borrow</button>
+          <button className={"mm" + (mode === "save" ? " on" : "")} onClick={() => setMode("save")}><PiggyBank size={15} strokeWidth={2.4} /> Save / Deposit</button>
         </div>
       </div>
 
@@ -127,7 +128,7 @@ export default function Marketplace({ idleCash = 0, goalLoan, rates }) {
               )}
             </div>
 
-            <a className="mkt-go" href={r.inst.url} target="_blank" rel="noopener noreferrer">Visit →</a>
+            <a className="mkt-go" href={r.inst.url} target="_blank" rel="noopener noreferrer">Visit <ExternalLink size={14} strokeWidth={2.5} /></a>
           </div>
         ))}
       </div>

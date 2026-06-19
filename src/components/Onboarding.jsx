@@ -133,8 +133,8 @@ export default function Onboarding({ user, onDone, onSkip }) {
 
 function Step({ emoji, title, sub, children }) {
   return (
-    <div className="onb-step">
-      <div className="onb-emoji">{emoji}</div>
+    <div className="onb-step" key={title}>
+      <div className="onb-emoji" key={emoji}>{emoji}</div>
       <h2>{title}</h2>
       <p className="onb-substep">{sub}</p>
       {children}
