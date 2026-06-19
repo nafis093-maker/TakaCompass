@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import Marketplace from "./components/Marketplace.jsx";
 
 // ============================================================================
 //  TAKA COMPASS — a personal financial planner tuned to Bangladesh
@@ -104,7 +105,7 @@ const seed = {
   ],
 };
 
-const TABS = ["Cash flow", "Net worth", "Goals", "Insights", "Projection"];
+const TABS = ["Cash flow", "Net worth", "Goals", "Marketplace", "Insights", "Projection"];
 
 export default function Dashboard({ initial, onPersist, user, onSignOut }) {
   const [rates, setRates] = useState(BD);
@@ -169,6 +170,17 @@ export default function Dashboard({ initial, onPersist, user, onSignOut }) {
   const emMonths = essExp > 0 ? liquid / essExp : 0;
   const blendedRet = totalAssets > 0 ? assets.reduce((s, a) => s + a.amt * a.ret, 0) / totalAssets : 0;
   const realRet = ((1 + blendedRet / 100) / (1 + rates.inflation / 100) - 1) * 100;
+
+  const idleCash = Math.max(0, liquid - essExp * 6);
+  const bigGoal = goals.slice().sort((a, b) => b.cost - a.cost)[0];
+  const goalLoan = bigGoal
+    ? {
+        amount: bigGoal.cost * (1 - bigGoal.dp / 100),
+        years: bigGoal.tenure,
+        cat: /flat|home|house|apart/i.test(bigGoal.name) ? "home-loan"
+          : /car|auto/i.test(bigGoal.name) ? "car-loan" : "personal-loan",
+      }
+    : null;
 
   const annualTaxable = totalIncome * 12;
   const tax = taxBD(annualTaxable, taxInvest, rates);
@@ -382,6 +394,10 @@ export default function Dashboard({ initial, onPersist, user, onSignOut }) {
             </ol>
           </div>
         </div>
+      )}
+
+      {tab === "Marketplace" && (
+        <Marketplace idleCash={idleCash} goalLoan={goalLoan} rates={rates} />
       )}
 
       {tab === "Projection" && (
@@ -789,4 +805,48 @@ input,select,button{font-family:inherit}
 .projstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;border-top:1px solid var(--ln);padding-top:13px;margin-top:12px}
 .projwarn{font-size:12.5px;color:var(--warn);margin:12px 0 0;line-height:1.5}
 .projnote{font-size:11.5px;color:var(--mut);margin:10px 0 0;line-height:1.5}
+.mkt{margin-top:14px}
+.mkt-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.mkt-sub{margin:2px 0 0;color:var(--mut);font-size:13px;max-width:520px;line-height:1.5}
+.mkt-modes{display:flex;gap:4px;background:var(--p1);border:1px solid var(--ln);border-radius:999px;padding:5px;box-shadow:0 6px 18px -14px #7c5cff}
+.mm{background:none;border:none;color:var(--mut);padding:9px 16px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:700}
+.mm.on{background:linear-gradient(135deg,#7c5cff,#5b8cff);color:#fff}
+.mkt-controls{background:var(--p1);border:1px solid var(--ln);border-radius:18px;padding:14px 16px;margin-bottom:14px;box-shadow:0 12px 30px -26px #7c5cff}
+.mkt-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.mchip{display:flex;align-items:center;gap:7px;background:var(--p2);border:1.5px solid var(--ln);border-radius:999px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;color:var(--tx)}
+.mchip.on{border-color:var(--acc);background:#f1ecff;color:var(--acc)}
+.mkt-inputs{display:flex;gap:14px;flex-wrap:wrap}
+.mkt-field{display:flex;flex-direction:column;gap:5px}
+.mkt-field>span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.mkt-money{display:flex;align-items:center;background:var(--p2);border:1px solid var(--ln);border-radius:12px;padding:0 12px;width:200px}
+.mkt-money:focus-within{border-color:var(--acc);background:#fff}
+.mkt-money i{color:var(--mut);font-style:normal;font-weight:700}
+.mkt-money input{width:100%;border:none;background:none;padding:10px 6px;font-size:15px;font-weight:700;text-align:right;color:var(--tx);font-family:ui-monospace,monospace}
+.mkt-money input:focus{outline:none}
+.mkt-yr{width:110px;background:var(--p2);border:1px solid var(--ln);border-radius:12px;padding:10px 12px;font-size:15px;font-weight:700;color:var(--tx);font-family:ui-monospace,monospace;text-align:right}
+.mkt-yr:focus{outline:none;border-color:var(--acc)}
+.mkt-list{display:flex;flex-direction:column;gap:10px}
+.mkt-card{display:flex;align-items:center;gap:16px;background:var(--p1);border:1px solid var(--ln);border-radius:18px;padding:14px 16px;flex-wrap:wrap;box-shadow:0 12px 30px -28px #7c5cff}
+.mkt-card.sponsored{border-color:#d9ccff;background:linear-gradient(180deg,#faf7ff,#fff);box-shadow:0 14px 32px -22px #7c5cff}
+.mkt-left{display:flex;flex-direction:column;gap:7px;flex:1;min-width:200px}
+.mkt-inst{display:flex;align-items:center;gap:11px}
+.mkt-logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#7c5cff,#5b8cff);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex:none}
+.mkt-name{font-size:14.5px;font-weight:700}
+.mkt-type{font-size:10px;color:var(--mut);border:1px solid var(--ln);border-radius:999px;padding:1px 7px;font-weight:600;vertical-align:middle;margin-left:4px}
+.mkt-prod{font-size:12px;color:var(--mut)}
+.mkt-badges{display:flex;gap:6px}
+.b-sponsored{font-size:10px;font-weight:800;letter-spacing:.04em;color:#8a63ff;background:#efe8ff;border-radius:999px;padding:3px 9px}
+.b-best{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--good);background:#e3f8f0;border-radius:999px;padding:3px 9px}
+.mkt-mid{text-align:center;min-width:74px}
+.mkt-rate{font-size:26px;font-weight:800;font-family:ui-monospace,monospace;letter-spacing:-.03em;color:var(--acc)}
+.mkt-rate small{font-size:14px;font-weight:700}
+.mkt-rlabel{font-size:10.5px;color:var(--mut);margin-top:-2px}
+.mkt-calc{display:flex;flex-direction:column;gap:5px;min-width:160px}
+.mc{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--mut)}
+.mc b{font-family:ui-monospace,monospace;color:var(--tx);font-weight:700}
+.mc b.good{color:var(--good)}.mc b.warn{color:var(--warn)}
+.mkt-go{background:linear-gradient(135deg,#7c5cff,#5b8cff);color:#fff;text-decoration:none;border-radius:999px;padding:10px 18px;font-weight:800;font-size:13.5px;box-shadow:0 8px 18px -10px #7c5cff;white-space:nowrap}
+.mkt-go:hover{filter:brightness(1.05)}
+.mkt-foot{margin-top:14px;font-size:11.5px;color:var(--mut);line-height:1.55}.mkt-foot b{color:var(--tx)}
+.mkt-spon-note{display:block;margin-top:3px}
 `;

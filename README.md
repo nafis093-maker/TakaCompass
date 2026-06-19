@@ -106,6 +106,35 @@ with a static frontend — that's the clean upgrade path when you're ready.
 
 
 
+## Rate marketplace (and the monetization model)
+
+The **Marketplace** tab compares loan and deposit products across banks & NBFIs.
+It pre-fills from the user's own situation — your biggest goal's loan amount in
+*Borrow* mode, your idle cash in *Save* mode — computes the EMI / maturity for
+each option, and ranks them best-deal-first with a one-click *Visit →* to the
+institution's site.
+
+The catalog lives in `src/data/products.js`. Each product supports
+`sponsored: true` + a `priority`, which pins it to the top of its category with a
+visible **Sponsored** badge — the paid-placement mechanism. Everything below a
+sponsored row is ranked purely by best cost/return, and the best non-sponsored
+option is badged **Best rate**, so the listing stays trustworthy.
+
+Before commercializing:
+
+- **Rates are indicative samples, not a live feed.** There's no single API for BD
+  institution rates and they change constantly. Replace the catalog with confirmed
+  data (partner-supplied or a maintained admin/DB) and keep the "verify" labeling.
+  Wrong rates are both a trust and a liability risk.
+- **Displaying institutions' rates and charging for placement** in Bangladesh
+  likely engages Bangladesh Bank rules and you'd want agreements with the
+  institutions before using their names commercially. Labeling sponsored listings
+  (built in) is standard. Not legal advice — get proper counsel before launch.
+- **Chicken-and-egg:** institutions pay once you have users; users come if the
+  data is accurate and comprehensive. Early on, catalog accuracy *is* the product.
+
+## Deploy to Vercel
+
 Import the GitHub repo at vercel.com → Add New → Project. Vercel auto-detects
 Vite (build `npm run build`, output `dist`). Or run `vercel --prod` from the
 folder with the Vercel CLI.
