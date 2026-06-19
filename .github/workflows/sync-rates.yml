@@ -1,0 +1,35 @@
+name: Sync BD reference rates
+
+on:
+  schedule:
+    # 02:00 UTC = 08:00 Bangladesh (UTC+6), daily
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh rates
+        run: node scripts/sync-rates.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "rates-bot"
+          git config user.email "rates-bot@users.noreply.github.com"
+          git add public/rates.json
+          if git diff --staged --quiet; then
+            echo "No rate changes today."
+          else
+            git commit -m "chore: daily rate sync ($(date -u +%F))"
+            git push
+          fi

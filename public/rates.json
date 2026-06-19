@@ -1,0 +1,21 @@
+{
+  "lastSynced": "2026-06-19",
+  "inflation": 9.4,
+  "sanchayapatra": 11.83,
+  "dps": 10,
+  "fdr": 9,
+  "homeLoan": 13,
+  "carLoan": 13.5,
+  "policy": 10,
+  "taxFree": 375000,
+  "lendingRefWB": null,
+  "_about": "Reference rates for Taka Compass. The app fetches this file on load. It is refreshed daily by .github/workflows/sync-rates.yml, which runs scripts/sync-rates.mjs.",
+  "_sources": {
+    "inflation": "BBS monthly CPI release",
+    "sanchayapatra": "nationalsavings.gov.bd circular — 5-yr Bangladesh Sanchayapatra, up to 7.5 lakh",
+    "policy": "Bangladesh Bank policy (repo) rate",
+    "homeLoan": "market average under the post-2024 floating regime",
+    "lendingRefWB": "World Bank FR.INR.LEND (annual avg lending rate, lagging ~1yr) — pulled live as a reference",
+    "note": "Most BD savings/policy rates have no official public JSON API and change via periodic circulars. The sync script keeps the last good value and only overwrites a field when a fetcher returns one. When a new circular lands, you can also just edit the numbers here and redeploy."
+  }
+}

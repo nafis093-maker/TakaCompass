@@ -10,6 +10,36 @@ Defaults use mid-2026 BD reference rates — inflation ~9.4%, Sanchayapatra
 
 Built with Vite + React. Fully client-side, no backend, no env vars.
 
+## Features
+
+- **Cash flow / Net worth / Goals / Insights / Projection** tabs.
+- **Projection** plots your net worth 5–10 years out at your current surplus and
+  blended return, with an inflation-adjusted ("today's taka") line overlaid.
+- **Auto-sync** pulls the BD reference rates from `public/rates.json` on load and
+  shows the last-synced date. A daily GitHub Action keeps that file fresh (see
+  below). Toggle it off to drive the rates manually.
+
+## Daily rate auto-sync — how it works
+
+```
+.github/workflows/sync-rates.yml   (cron: 08:00 Bangladesh, daily)
+        └─ runs scripts/sync-rates.mjs
+                 └─ updates public/rates.json + commits
+                          └─ push triggers a Vercel redeploy
+                                   └─ app fetches the fresh rates.json on load
+```
+
+Honest note on data sources: most BD savings/policy rates have **no official
+public API** and change via periodic circulars. The script ships with curated
+mid-2026 baselines and only overwrites a field when its fetcher returns a value,
+so the file never degrades. The World Bank lending rate is wired live as a
+working example; the inflation / Sanchayapatra / policy fetchers are stubs in
+`scripts/sync-rates.mjs` for you to point at a source you trust. When a new
+circular lands you can also just edit `public/rates.json` and redeploy.
+
+The action needs no secrets — it commits with the built-in `GITHUB_TOKEN`. Make
+sure Settings → Actions → "Workflow permissions" is set to **Read and write**.
+
 ## Run locally
 
 ```bash

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
 // ============================================================================
 //  TAKA COMPASS — a personal financial planner tuned to Bangladesh
@@ -42,6 +42,8 @@ const big = (n) => {
   if (a >= 1e5) return "৳" + fmt(n / 1e5, 2) + " L";
   return tk(n);
 };
+
+const num = (v, fb) => (typeof v === "number" && !isNaN(v) ? v : fb);
 
 let _id = 1;
 const uid = () => ++_id;
@@ -102,7 +104,7 @@ const seed = {
   ],
 };
 
-const TABS = ["Cash flow", "Net worth", "Goals", "Insights"];
+const TABS = ["Cash flow", "Net worth", "Goals", "Insights", "Projection"];
 
 export default function App() {
   const [rates, setRates] = useState(BD);
@@ -113,6 +115,38 @@ export default function App() {
   const [goals, setGoals] = useState(seed.goals);
   const [tab, setTab] = useState("Cash flow");
   const [taxInvest, setTaxInvest] = useState(360000);
+  const [autoSync, setAutoSync] = useState(true);
+  const [lastSynced, setLastSynced] = useState(null);
+  const [syncMsg, setSyncMsg] = useState("");
+
+  const syncRates = async () => {
+    try {
+      setSyncMsg("syncing…");
+      const res = await fetch("rates.json?ts=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) throw new Error("no rates file");
+      const d = await res.json();
+      setRates((r) => ({
+        ...r,
+        inflation: num(d.inflation, r.inflation),
+        sanchayapatra: num(d.sanchayapatra, r.sanchayapatra),
+        dps: num(d.dps, r.dps),
+        fdr: num(d.fdr, r.fdr),
+        homeLoan: num(d.homeLoan, r.homeLoan),
+        carLoan: num(d.carLoan, r.carLoan),
+        policy: num(d.policy, r.policy),
+        taxFree: num(d.taxFree, r.taxFree),
+      }));
+      setLastSynced(d.lastSynced || new Date().toISOString().slice(0, 10));
+      setSyncMsg("");
+    } catch (e) {
+      setSyncMsg("built-in rates · deploy to enable daily sync");
+    }
+  };
+
+  useEffect(() => {
+    if (autoSync) syncRates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSync]);
 
   // ---- derived totals ----
   const totalIncome = income.reduce((s, x) => s + x.amt, 0);
@@ -180,6 +214,17 @@ export default function App() {
         <Stat label="Emergency fund" value={fmt(emMonths, 1) + " mo"} sub={emMonths >= 6 ? "covered" : "build to 6"} tone={emMonths >= 6 ? "good" : emMonths >= 3 ? "warn" : "bad"} />
         <Stat label="Debt / income" value={fmt(dti, 0) + "%"} sub={dti <= 36 ? "healthy" : dti <= 40 ? "tight" : "stretched"} tone={dti <= 36 ? "good" : dti <= 40 ? "warn" : "bad"} />
         <Stat label="Real growth" value={(realRet >= 0 ? "+" : "") + fmt(realRet, 1) + "%"} sub={"after " + fmt(rates.inflation, 1) + "% inflation"} tone={realRet >= 0 ? "good" : "bad"} />
+      </div>
+
+      <div className="syncstrip">
+        <label className="swtog">
+          <input type="checkbox" checked={autoSync} onChange={(e) => setAutoSync(e.target.checked)} />
+          <span className="track"><span className="knob" /></span>
+          Auto-sync BD rates daily
+        </label>
+        <span className="syncstate">{lastSynced ? "synced " + lastSynced : (syncMsg || "built-in rates")}</span>
+        <button className="syncnow" onClick={syncRates}>Sync now</button>
+        <span className="syncnote">Rates load from your deployed <code>rates.json</code>, refreshed daily by the bundled GitHub Action.</span>
       </div>
 
       <nav className="tabs">
@@ -325,6 +370,10 @@ export default function App() {
         </div>
       )}
 
+      {tab === "Projection" && (
+        <Projection netWorth={netWorth} surplus={surplus} blendedRet={blendedRet} inflation={rates.inflation} />
+      )}
+
       <footer className="ft">
         <p><b>Not financial advice.</b> Every figure here is arithmetic on the numbers you enter, using mid-2026 Bangladesh reference rates you can edit in the top bar. Tax is an estimate of the FY2026-27 structure — confirm slabs, the rebate cap and your eligible investments with the NBR or a tax advisor. Sanchayapatra/loan rates change; re-check before acting. I'm not a licensed financial advisor.</p>
       </footer>
@@ -435,6 +484,78 @@ function GoalCard({ g, surplus, totalIncome, curEMI, onC, onDel }) {
         <M label="Debt after" v={fmt(dtiAfter, 0) + "% of income"} />
       </div>
       <div className={"verdict " + vlevel}>{verdict}</div>
+    </div>
+  );
+}
+
+// ---------------- projection chart ----------------
+function projectSeries(nw, annualAdd, growth, infl, years) {
+  const pts = [{ y: 0, nom: nw, real: nw }];
+  let v = nw;
+  for (let i = 1; i <= years; i++) {
+    v = v * (1 + growth / 100) + annualAdd;
+    pts.push({ y: i, nom: v, real: v / Math.pow(1 + infl / 100, i) });
+  }
+  return pts;
+}
+
+function Projection({ netWorth, surplus, blendedRet, inflation }) {
+  const [years, setYears] = useState(10);
+  const annualAdd = surplus * 12;
+  const series = projectSeries(netWorth, annualAdd, blendedRet, inflation, years);
+  const end = series[series.length - 1];
+  const W = 720, H = 320, PL = 70, PR = 18, PT = 18, PB = 34;
+  const vals = series.flatMap((p) => [p.nom, p.real]);
+  const yMax = Math.max(...vals, 1), yMin = Math.min(...vals, 0);
+  const xx = (i) => PL + (i / years) * (W - PL - PR);
+  const yy = (v) => PT + (1 - (v - yMin) / (yMax - yMin || 1)) * (H - PT - PB);
+  const path = (key) => series.map((p, i) => (i ? "L" : "M") + xx(p.y).toFixed(1) + " " + yy(p[key]).toFixed(1)).join(" ");
+  const ticks = 4;
+  const tickVals = Array.from({ length: ticks + 1 }, (_, i) => yMin + (i / ticks) * (yMax - yMin));
+
+  return (
+    <div className="proj">
+      <div className="projhd">
+        <div>
+          <h3>Net worth, projected {years} years out</h3>
+          <p>Assumes your {tk(annualAdd)}/yr surplus stays invested at your {fmt(blendedRet, 1)}% blended return. The faded line is the same wealth in <b>today's</b> taka, after {fmt(inflation, 1)}% inflation.</p>
+        </div>
+        <label className="yearsel">Horizon
+          <input type="range" min="5" max="10" value={years} onChange={(e) => setYears(+e.target.value)} />
+          <b>{years}y</b>
+        </label>
+      </div>
+
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart" preserveAspectRatio="xMidYMid meet">
+        {tickVals.map((t, i) => (
+          <g key={i}>
+            <line x1={PL} x2={W - PR} y1={yy(t)} y2={yy(t)} className="grid" />
+            <text x={PL - 8} y={yy(t) + 4} className="ytk" textAnchor="end">{big(t)}</text>
+          </g>
+        ))}
+        {series.map((p) => (
+          <text key={p.y} x={xx(p.y)} y={H - PB + 18} className="xtk" textAnchor="middle">{p.y}</text>
+        ))}
+        {yMin < 0 && <line x1={PL} x2={W - PR} y1={yy(0)} y2={yy(0)} className="zero" />}
+        <path d={path("real")} className="lreal" />
+        <path d={path("nom")} className="lnom" />
+        {series.map((p) => <circle key={"n" + p.y} cx={xx(p.y)} cy={yy(p.nom)} r="2.5" className="dotn" />)}
+        <circle cx={xx(end.y)} cy={yy(end.nom)} r="4.5" className="dotend" />
+      </svg>
+
+      <div className="leg">
+        <span><i className="lk nom" />Nominal net worth</span>
+        <span><i className="lk real" />In today's purchasing power</span>
+      </div>
+
+      <div className="projstats">
+        <M label={`Net worth in ${years}y (nominal)`} v={big(end.nom)} hot />
+        <M label="In today's purchasing power" v={big(end.real)} />
+        <M label="Total you contribute" v={big(annualAdd * years)} />
+        <M label="Growth on top" v={big(end.nom - netWorth - annualAdd * years)} />
+      </div>
+      {surplus <= 0 && <p className="projwarn">Your current surplus is {tk(surplus)} — with nothing to invest, this curve only reflects growth (or drawdown) on existing assets. Closing the cash-flow gap is what bends it upward.</p>}
+      <p className="projnote">A planning projection, not a forecast — real returns vary year to year. Assumes steady contributions and return, and that existing debt amortises on schedule.</p>
     </div>
   );
 }
@@ -614,4 +735,37 @@ input,select,button{font-family:inherit}
 .empty{color:var(--mut);font-size:13px;padding:8px 4px}
 .ft{margin-top:20px;background:var(--p1);border:1px solid var(--ln);border-radius:12px;padding:14px 16px}
 .ft p{margin:0;font-size:12px;color:var(--mut);line-height:1.55}.ft b{color:var(--tx)}
+.syncstrip{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;background:var(--p1);border:1px solid var(--ln);border-radius:11px;padding:9px 14px}
+.swtog{display:flex;align-items:center;gap:9px;font-size:13px;cursor:pointer;user-select:none;position:relative}
+.swtog input{position:absolute;opacity:0;width:0;height:0}
+.track{width:36px;height:20px;border-radius:20px;background:var(--ln);position:relative;transition:background .15s;flex:none}
+.knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--mut);transition:.15s}
+.swtog input:checked+.track{background:var(--good)}
+.swtog input:checked+.track .knob{left:18px;background:#04140d}
+.swtog input:focus-visible+.track{box-shadow:0 0 0 2px var(--info)}
+.syncstate{font-size:12px;color:var(--mut);font-family:ui-monospace,monospace}
+.syncnow{background:none;border:1px solid var(--ln);color:var(--tx);border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer}
+.syncnow:hover{border-color:var(--good);color:var(--good)}
+.syncnote{font-size:11px;color:var(--mut);margin-left:auto}.syncnote code{color:var(--info)}
+.proj{margin-top:14px;background:var(--p1);border:1px solid var(--ln);border-radius:13px;padding:16px 18px}
+.projhd{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.projhd h3{margin:0 0 3px;font-size:15px}
+.projhd p{margin:0;font-size:12.5px;color:var(--mut);line-height:1.5;max-width:560px}.projhd p b{color:var(--tx)}
+.yearsel{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut)}
+.yearsel input{accent-color:var(--good)}
+.yearsel b{color:var(--tx);font-family:ui-monospace,monospace}
+.chart{width:100%;height:auto;margin:14px 0 4px;overflow:visible}
+.grid{stroke:var(--ln);stroke-width:1}
+.zero{stroke:var(--mut);stroke-width:1;stroke-dasharray:2 3}
+.ytk,.xtk{fill:var(--mut);font-size:11px;font-family:ui-monospace,monospace}
+.lnom{fill:none;stroke:var(--good);stroke-width:2.5;stroke-linejoin:round}
+.lreal{fill:none;stroke:var(--mut);stroke-width:1.5;stroke-dasharray:5 4;stroke-linejoin:round}
+.dotn{fill:var(--good)}.dotend{fill:var(--good);stroke:var(--bg);stroke-width:2}
+.leg{display:flex;gap:18px;font-size:12px;color:var(--mut);margin-top:2px}
+.leg span{display:flex;align-items:center;gap:7px}
+.lk{width:16px;height:0;border-top:2.5px solid var(--good);display:inline-block}
+.lk.real{border-top:1.5px dashed var(--mut)}
+.projstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;border-top:1px solid var(--ln);padding-top:13px;margin-top:12px}
+.projwarn{font-size:12.5px;color:var(--warn);margin:12px 0 0;line-height:1.5}
+.projnote{font-size:11.5px;color:var(--mut);margin:10px 0 0;line-height:1.5}
 `;
