@@ -12,6 +12,15 @@ Built with Vite + React. Fully client-side, no backend, no env vars.
 
 ## Features
 
+- **Money manager home** (the main app): a clean, mobile, transaction-first
+  experience inspired by apps like Monarch/Spendee — a **Timeline** of
+  transactions grouped by day, **Wallets** with balances and a total-wealth line,
+  **Budgets** with progress bars, a **Stats** overview (cash-flow bars + category
+  donut), colorful category icons, and a quick add-transaction sheet. Everything
+  derives from your transactions; bottom-nav navigation; data saved per account.
+- The full **BD planner** (net worth, goals, tax, projections, loan/deposit rate
+  marketplace, insights) now lives under **More → Advanced planner**, so the daily
+  experience stays simple but the depth is one tap away.
 - **Cash flow / Net worth / Goals / Insights / Projection** tabs.
 - **Projection** plots your net worth 5–10 years out at your current surplus and
   blended return, with an inflation-adjusted ("today's taka") line overlaid.
