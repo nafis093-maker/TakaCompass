@@ -77,7 +77,34 @@ git remote add origin <your-repo-url>
 git push -u origin main
 ```
 
-## Deploy to Vercel
+## Accounts & sign-in
+
+The app opens on a login screen with **Continue with Google**, **Continue with
+Apple**, and **Skip — guest mode**. After sign-in, a short step-by-step setup
+collects your numbers (income → expenses → savings → loans → goals) instead of a
+dense form, then drops you into the dashboard. Your data is saved in the browser,
+keyed to your account, so it's there next time. Guest mode loads demo data.
+
+Setup needed for real OAuth (copy `.env.example` → `.env`, fill in, redeploy):
+
+- **Google** works fully client-side. Create an OAuth client ID at
+  console.cloud.google.com → Credentials → OAuth client ID → Web application,
+  add your deployed URL to *Authorized JavaScript origins*, and set
+  `VITE_GOOGLE_CLIENT_ID`. On Vercel, add it under Project → Settings →
+  Environment Variables and redeploy. Until it's set, the Google button gently
+  points you to guest mode.
+- **Apple** can't be done from a static frontend — it needs an Apple Developer
+  account ($99/yr) and the server-side verifier in `api/apple-auth.js`. The
+  button and serverless scaffold are in place but inert until you configure it.
+
+### Going further (optional)
+
+Browser-stored data doesn't sync across devices, and Apple's server bits are
+fiddly. If you want real accounts with both providers and cross-device data, a
+managed auth + DB provider (Supabase, Firebase, Clerk, Auth0) handles all of it
+with a static frontend — that's the clean upgrade path when you're ready.
+
+
 
 Import the GitHub repo at vercel.com → Add New → Project. Vercel auto-detects
 Vite (build `npm run build`, output `dist`). Or run `vercel --prod` from the
