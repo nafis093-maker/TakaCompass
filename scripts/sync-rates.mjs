@@ -17,6 +17,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const FILE = join(__dirname, "..", "public", "rates.json");
 const num = (v) => (typeof v === "number" && !isNaN(v) ? v : null);
 
+// Bangla → Western digits (govt pages often render numbers in Bangla)
+const BN = { "০": "0", "১": "1", "২": "2", "৩": "3", "৪": "4", "৫": "5", "৬": "6", "৭": "7", "৮": "8", "৯": "9" };
+const bnToEn = (s) => s.replace(/[০-৯]/g, (d) => BN[d]);
+
+// --- Sanchayapatra source config (adjust if the Action log shows a miss) ----
+// The Dept. of National Savings publishes profit rates here. There is no API,
+// so we fetch the page, flatten it to text, and pull the 5-year Bangladesh
+// Sanchayapatra rate near its label. If they move the page or render it via
+// JS / PDF, this returns null and the curated baseline in rates.json is kept.
+const SANCHAYAPATRA_URLS = [
+  "https://nationalsavings.gov.bd/",
+  "https://www.nationalsavings.gov.bd/",
+];
+
 // --- live source: World Bank avg lending rate for Bangladesh (free, lagging) ---
 async function fetchLendingRateWB() {
   try {
@@ -34,9 +48,44 @@ async function fetchLendingRateWB() {
 
 // --- stubs: return a number once you point them at a source you trust ---------
 async function fetchInflation() { return null; }     // e.g. parse BBS CPI release
-async function fetchSanchayapatra() { return null; }  // nationalsavings.gov.bd circular
 async function fetchPolicyRate() { return null; }     // Bangladesh Bank
 async function fetchFdr() { return null; }            // your bank's published board
+
+// --- real best-effort: 5-year Bangladesh Sanchayapatra from nationalsavings.gov.bd
+async function fetchSanchayapatra() {
+  for (const url of SANCHAYAPATRA_URLS) {
+    try {
+      const r = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; taka-compass-bot/1.0)" },
+        redirect: "follow",
+      });
+      if (!r.ok) continue;
+      const text = bnToEn(await r.text())
+        .replace(/<[^>]+>/g, " ")   // drop tags
+        .replace(/&nbsp;/gi, " ")
+        .replace(/\s+/g, " ");
+      // a percentage figure sitting near a 5-year / Bangladesh Sanchayapatra label
+      const patterns = [
+        /(?:5[\s-]?year|five[\s-]?year|bangladesh\s*sanchayapatra|5\s*bochor|p(?:a|aa)nch\s*bochor)[^%]{0,140}?(\d{1,2}(?:\.\d{1,2})?)\s*%/i,
+        /(\d{2}(?:\.\d{1,2})?)\s*%[^%]{0,80}?(?:5[\s-]?year|bangladesh\s*sanchayapatra)/i,
+      ];
+      for (const re of patterns) {
+        const m = text.match(re);
+        if (m) {
+          const v = parseFloat(m[1]);
+          if (v > 5 && v < 20) {        // sanity band — rejects junk matches
+            console.log("sanchayapatra: matched", v + "% from", url);
+            return Math.round(v * 100) / 100;
+          }
+        }
+      }
+      console.warn("sanchayapatra: fetched", url, "but no rate matched — page may be JS-rendered or relabelled; adjust SANCHAYAPATRA_URLS / patterns");
+    } catch (e) {
+      console.warn("sanchayapatra: fetch failed for", url, "—", e.message);
+    }
+  }
+  return null; // keep the curated baseline
+}
 
 async function main() {
   const cur = JSON.parse(await readFile(FILE, "utf8"));
