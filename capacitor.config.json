@@ -1,0 +1,6 @@
+{
+  "appId": "app.takacompass.money",
+  "appName": "Taka Compass",
+  "webDir": "dist",
+  "android": { "allowMixedContent": true }
+}

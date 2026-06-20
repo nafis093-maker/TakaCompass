@@ -12,6 +12,8 @@ import AddTxn from "./AddTxn.jsx";
 import AddAccount from "./AddAccount.jsx";
 import ImportSms from "./ImportSms.jsx";
 import Plan from "./Plan.jsx";
+import { parseOne } from "./smsparse.js";
+import { isNative, watchSms, stopWatch } from "./native.js";
 
 const NAV = [
   { key: "timeline", label: "Timeline", Icon: Receipt },
@@ -30,6 +32,19 @@ export default function MoneyApp({ user, onSignOut }) {
   const [importing, setImporting] = useState(false);
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
+
+  // On native Android: auto-capture new transaction SMS as they arrive.
+  useEffect(() => {
+    if (!isNative()) return;
+    let sub;
+    watchSms((ev) => {
+      const d = parseOne(ev.body || "");
+      if (!d) return;
+      setData((prev) => ({ ...prev, txns: [...prev.txns, { id: uid(), type: d.type, amount: d.amount, category: d.category, walletId: prev.wallets[0]?.id, date: d.date, note: d.note }] }));
+    }).then((s) => { sub = s; });
+    return () => { if (sub && sub.remove) sub.remove(); stopWatch(); };
+  }, []);
+
   const { wallets, txns, budgets, loans = [], goals = [] } = data;
 
   const importTxns = (list) => {
