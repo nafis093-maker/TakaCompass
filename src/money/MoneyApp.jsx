@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
-  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText,
+  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
@@ -11,6 +11,7 @@ import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
 import AddAccount from "./AddAccount.jsx";
 import ImportSms from "./ImportSms.jsx";
+import StatementImport from "./StatementImport.jsx";
 import Plan from "./Plan.jsx";
 import { parseOne } from "./smsparse.js";
 import { isNative, watchSms, stopWatch } from "./native.js";
@@ -30,6 +31,7 @@ export default function MoneyApp({ user, onSignOut }) {
   const [editing, setEditing] = useState(null);
   const [addAcct, setAddAcct] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
 
@@ -69,7 +71,7 @@ export default function MoneyApp({ user, onSignOut }) {
   return (
     <div className="m-app">
       <div className="m-screen">
-        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} />}
+        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} />}
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
@@ -92,11 +94,12 @@ export default function MoneyApp({ user, onSignOut }) {
       {adding && <AddTxn wallets={wallets} initial={editing} onClose={() => { setAdding(false); setEditing(null); }} onSave={saveTxn} />}
       {addAcct && <AddAccount onClose={() => setAddAcct(false)} onAddWallet={(w) => { addWallet(w); setAddAcct(false); }} onAddLoan={(l) => { addLoan(l); setAddAcct(false); }} />}
       {importing && <ImportSms wallets={wallets} onClose={() => setImporting(false)} onImport={importTxns} />}
+      {uploading && <StatementImport wallets={wallets} onClose={() => setUploading(false)} onImport={importTxns} />}
     </div>
   );
 }
 
-function Timeline({ data, onEdit, goPlan, openImport }) {
+function Timeline({ data, onEdit, goPlan, openImport, openUpload }) {
   const { txns, wallets } = data;
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
@@ -126,7 +129,8 @@ function Timeline({ data, onEdit, goPlan, openImport }) {
       ) : <p className="m-empty">No spending logged this month yet.</p>}
       <div className="m-overrow">
         <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> Full breakdown <ChevronRight size={16} /></button>
-        <button className="m-overview alt" onClick={openImport}><MessageSquareText size={16} /> Import SMS</button>
+        <button className="m-overview alt" onClick={openUpload}><FileText size={16} /> Statement</button>
+        <button className="m-overview alt" onClick={openImport}><MessageSquareText size={16} /> SMS</button>
       </div>
 
       {groups.length === 0 && <p className="m-empty">No transactions yet. Tap + to add your first one.</p>}

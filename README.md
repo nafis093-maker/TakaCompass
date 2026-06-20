@@ -27,6 +27,14 @@ double entry:
   growth, and personalized BD insights), *Goals* (feasibility math for a flat/car/
   etc.), *Future* (net-worth projection + FY2026-27 tax estimate), and *Rates*
   (the live loan/deposit marketplace).
+- **Importing** — three fast ways in, all reviewed before saving:
+  - **Bank statement upload (PDF):** upload one or more statements from different
+    banks; the app extracts transactions client-side (pdf.js), figures out
+    income/expense from the running balance, guesses categories, and lets you
+    assign each statement to a wallet. Password-protected PDFs supported; scanned
+    image PDFs are not.
+  - **SMS paste/import:** paste bKash/Nagad/Rocket/bank SMS (or auto-read on the
+    native Android build — see NATIVE_ANDROID.md).
 - **More** — profile, export JSON, sign out.
 
 Everything is saved per account in the browser.

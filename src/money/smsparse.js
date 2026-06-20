@@ -18,7 +18,7 @@ function provider(low) {
   return "";
 }
 
-function guessCategory(low, who, type) {
+export function guessCategory(low, who, type) {
   if (type === "income") {
     if (/salary|payroll|wage/.test(low)) return "salary";
     if (/refund|cashback/.test(low)) return "other_in";
