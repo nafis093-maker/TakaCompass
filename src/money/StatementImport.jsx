@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { X, FileText, Trash2 } from "lucide-react";
 import { parsePdf } from "./stmtparse.js";
-import { EXPENSE_CATS, INCOME_CATS, uid } from "./lib.js";
+import { EXPENSE_CATS, INCOME_CATS, uid, txnFingerprint } from "./lib.js";
 
-export default function StatementImport({ wallets, onClose, onImport }) {
+export default function StatementImport({ wallets, onClose, onImport, existing = [] }) {
+  const existingFps = useMemo(() => new Set(existing.map(txnFingerprint)), [existing]);
   const bankDefault = (wallets.find((w) => w.kind === "bank") || wallets[0])?.id;
   const [files, setFiles] = useState([]); // {id, file, name, walletId, password, error}
   const [rows, setRows] = useState([]);   // parsed, editable
@@ -34,15 +35,23 @@ export default function StatementImport({ wallets, onClose, onImport }) {
       }
     }
     setBusy("");
+    const seen = new Set(existingFps);
+    out.forEach((r) => {
+      r.dupe = seen.has(txnFingerprint(r));
+      r.include = !r.dupe;
+      if (!r.dupe) seen.add(txnFingerprint(r));
+    });
     setRows(out);
   };
 
   const upd = (id, k, v) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, [k]: v } : r)));
   const importAll = () => {
     const chosen = rows.filter((r) => r.include && r.amount > 0);
-    onImport(chosen.map((r) => ({ id: uid(), type: r.type, amount: +r.amount, category: r.category, walletId: r.walletId, date: r.date, note: r.note })));
+    const skipped = rows.filter((r) => r.dupe && !r.include).length;
+    onImport(chosen.map((r) => ({ id: uid(), type: r.type, amount: +r.amount, category: r.category, walletId: r.walletId, date: r.date, note: r.note, ref: r.ref })), skipped);
   };
   const count = rows.filter((r) => r.include).length;
+  const dupes = rows.filter((r) => r.dupe).length;
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
@@ -80,7 +89,7 @@ export default function StatementImport({ wallets, onClose, onImport }) {
 
           {files.length > 0 && <button className="sms-auto" onClick={parseAll} disabled={!!busy}>{busy || `Read ${files.length} statement${files.length > 1 ? "s" : ""}`}</button>}
 
-          {rows.length > 0 && <div className="sms-found">{rows.length} transactions detected</div>}
+          {rows.length > 0 && <div className="sms-found">{rows.length} transactions detected{dupes ? ` · ${dupes} already imported` : ""}</div>}
           <div className="sms-list">
             {rows.map((r) => {
               const cats = r.type === "income" ? INCOME_CATS : EXPENSE_CATS;
@@ -91,6 +100,7 @@ export default function StatementImport({ wallets, onClose, onImport }) {
                     <div className="sms-line1">
                       <span className={"sms-type " + r.type}>{r.type}</span>
                       <span className="sms-amt"><i>৳</i><input inputMode="numeric" value={r.amount} onChange={(e) => upd(r.id, "amount", parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
+                      {r.dupe && <span className="sms-dupe">duplicate</span>}
                       <span className="stmt-bank">{r.bank}</span>
                     </div>
                     <div className="sms-line2">

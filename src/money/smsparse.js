@@ -70,6 +70,11 @@ function counterparty(s) {
   return clean(at?.[1] || to?.[1] || from?.[1] || "");
 }
 
+function refFrom(s) {
+  const m = s.match(/\b(?:trx\.?\s?id|txn\.?\s?id|transaction\s?id|trace\s?id|ref(?:erence)?(?:\s?(?:no|id|num|#))?)[:\s#.]*([A-Za-z0-9]{4,})/i);
+  return m ? m[1] : null;
+}
+
 export function parseOne(raw) {
   const s = raw.trim();
   if (!s) return null;
@@ -86,7 +91,8 @@ export function parseOne(raw) {
   const prov = provider(low);
   const note = [prov, who].filter(Boolean).join(" · ").slice(0, 40);
   const date = dateFrom(s) || today();
-  return { type, amount, category, note, date, raw: s };
+  const ref = refFrom(s) || undefined;
+  return { type, amount, category, note, date, ref, raw: s };
 }
 
 export function parseSms(text) {

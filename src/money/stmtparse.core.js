@@ -39,6 +39,11 @@ function describe(line) {
 
 const SKIP_RE = /opening balance|closing balance|balance b\/?f|brought forward|carried forward|\bb\/f\b|\bc\/f\b|^balance$|sub ?total|grand total/i;
 
+function refFrom(line) {
+  const m = line.match(/\b(?:trx\.?\s?id|txn\.?\s?id|transaction\s?id|ref(?:erence)?(?:\s?(?:no|id|#))?)[:\s#.]*([A-Za-z0-9]{5,})/i);
+  return m ? m[1] : null;
+}
+
 export function parseStatement(lines) {
   const raw = [];
   for (const line of lines) {
@@ -66,7 +71,7 @@ export function parseStatement(lines) {
     else type = "expense";
     if (r.balance != null) prev = r.balance;
     const category = guessCategory(r.desc.toLowerCase(), r.desc, type);
-    out.push({ type, amount: r.amount, category, note: r.desc, date: r.date, raw: r.line });
+    out.push({ type, amount: r.amount, category, note: r.desc, date: r.date, ref: refFrom(r.line) || undefined, raw: r.line });
   }
   return out;
 }

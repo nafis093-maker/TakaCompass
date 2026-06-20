@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
-  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText,
+  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
-  loadMoney, saveMoney, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown,
+  loadMoney, saveMoney, emptyData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown,
 } from "./lib.js";
 import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
@@ -32,8 +32,10 @@ export default function MoneyApp({ user, onSignOut }) {
   const [addAcct, setAddAcct] = useState(false);
   const [importing, setImporting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState("");
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
+  useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(""), 3500); return () => clearTimeout(id); }, [toast]);
 
   // On native Android: auto-capture new transaction SMS as they arrive.
   useEffect(() => {
@@ -42,17 +44,22 @@ export default function MoneyApp({ user, onSignOut }) {
     watchSms((ev) => {
       const d = parseOne(ev.body || "");
       if (!d) return;
-      setData((prev) => ({ ...prev, txns: [...prev.txns, { id: uid(), type: d.type, amount: d.amount, category: d.category, walletId: prev.wallets[0]?.id, date: d.date, note: d.note }] }));
+      setData((prev) => ({ ...prev, txns: [...prev.txns, { id: uid(), type: d.type, amount: d.amount, category: d.category, walletId: prev.wallets[0]?.id, date: d.date, note: d.note, ref: d.ref }] }));
     }).then((s) => { sub = s; });
     return () => { if (sub && sub.remove) sub.remove(); stopWatch(); };
   }, []);
 
   const { wallets, txns, budgets, loans = [], goals = [] } = data;
 
-  const importTxns = (list) => {
+  const importTxns = (list, skipped = 0) => {
     if (list && list.length) setData((d) => ({ ...d, txns: [...d.txns, ...list] }));
-    setImporting(false);
+    setImporting(false); setUploading(false);
+    const n = list ? list.length : 0;
+    const parts = [`Imported ${n} transaction${n === 1 ? "" : "s"}`];
+    if (skipped) parts.push(`${skipped} duplicate${skipped === 1 ? "" : "s"} skipped`);
+    setToast(n || skipped ? parts.join(" · ") : "Nothing to import");
   };
+  const clearData = () => { setData(emptyData()); setTab("timeline"); setToast("All data cleared"); };
 
   const saveTxn = (t) => {
     setData((d) => ({ ...d, txns: d.txns.some((x) => x.id === t.id) ? d.txns.map((x) => (x.id === t.id ? t : x)) : [...d.txns, t] }));
@@ -75,12 +82,14 @@ export default function MoneyApp({ user, onSignOut }) {
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
-        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} />}
+        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} />}
       </div>
 
       {tab === "timeline" && (
         <button className="m-fab" onClick={() => { setEditing(null); setAdding(true); }} aria-label="Add transaction"><Plus size={26} strokeWidth={2.6} /></button>
       )}
+
+      {toast && <div className="m-toast">{toast}</div>}
 
       <nav className="m-nav">
         {NAV.map((n) => (
@@ -93,8 +102,8 @@ export default function MoneyApp({ user, onSignOut }) {
 
       {adding && <AddTxn wallets={wallets} initial={editing} onClose={() => { setAdding(false); setEditing(null); }} onSave={saveTxn} />}
       {addAcct && <AddAccount onClose={() => setAddAcct(false)} onAddWallet={(w) => { addWallet(w); setAddAcct(false); }} onAddLoan={(l) => { addLoan(l); setAddAcct(false); }} />}
-      {importing && <ImportSms wallets={wallets} onClose={() => setImporting(false)} onImport={importTxns} />}
-      {uploading && <StatementImport wallets={wallets} onClose={() => setUploading(false)} onImport={importTxns} />}
+      {importing && <ImportSms wallets={wallets} existing={txns} onClose={() => setImporting(false)} onImport={importTxns} />}
+      {uploading && <StatementImport wallets={wallets} existing={txns} onClose={() => setUploading(false)} onImport={importTxns} />}
     </div>
   );
 }
@@ -253,11 +262,16 @@ function Budgets({ data, addBudget, delBudget }) {
   );
 }
 
-function More({ data, user, onSignOut }) {
+function More({ data, user, onSignOut, onClear }) {
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = "taka-compass-data.json"; a.click();
+  };
+  const clear = () => {
+    if (!confirm("Clear ALL data — every transaction, wallet, budget, loan and goal? This can't be undone.")) return;
+    if (!confirm("Are you absolutely sure? Tip: export a backup first.")) return;
+    onClear();
   };
   return (
     <div className="scr">
@@ -267,7 +281,8 @@ function More({ data, user, onSignOut }) {
         <div><div className="m-pname">{user.name}</div><div className="m-pmail">{user.email}</div></div>
       </div>
       <div className="m-menu">
-        <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON</i></span><ChevronRight size={18} /></button>
+        <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON (backup)</i></span><ChevronRight size={18} /></button>
+        <button onClick={clear}><span className="mm-ic" style={{ color: "#fa5a7d", background: "#fef0f3" }}><Trash2 size={20} /></span><span className="mm-txt"><b>Clear all data</b><i>Erase everything and start fresh</i></span><ChevronRight size={18} /></button>
         <button onClick={onSignOut}><span className="mm-ic" style={{ color: "#fa5a7d" }}><LogOut size={20} /></span><span className="mm-txt"><b>Sign out</b></span><ChevronRight size={18} /></button>
       </div>
       <p className="m-note">One app: log income, spending, wallets, loans and goals the simple way — the Plan tab turns it all into net worth, budgets, tax, projections and live loan/deposit rates automatically. Your data stays in this browser; there's no bank auto-sync (Bangladesh has no open-banking feed yet), which also keeps it fully private to you.</p>

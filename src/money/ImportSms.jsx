@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { X, Smartphone } from "lucide-react";
 import { parseSms } from "./smsparse.js";
-import { EXPENSE_CATS, INCOME_CATS, tk, uid } from "./lib.js";
+import { EXPENSE_CATS, INCOME_CATS, tk, uid, txnFingerprint } from "./lib.js";
 import { isNative, requestSms, readInbox, looksLikeTxn } from "./native.js";
 
 const SAMPLE = `You have received Tk 12,000.00 from 01712345678. Ref Salary. Balance Tk 18,500. TrxID 9AB1CD on 18/06/2026.
 Payment Tk 850.00 to Shwapno successful. bKash. Balance Tk 17,650.
 Cash Out Tk 5,000.00. Fee Tk 85. Nagad. 18-Jun-2026.`;
 
-export default function ImportSms({ wallets, onClose, onImport }) {
+export default function ImportSms({ wallets, onClose, onImport, existing = [] }) {
+  const existingFps = useMemo(() => new Set(existing.map(txnFingerprint)), [existing]);
   const [text, setText] = useState("");
   const [walletId, setWalletId] = useState(wallets[0]?.id);
   const [rows, setRows] = useState([]);
@@ -16,7 +17,12 @@ export default function ImportSms({ wallets, onClose, onImport }) {
 
   const parse = (t) => {
     setText(t);
-    setRows(parseSms(t).map((r) => ({ ...r, id: uid(), include: true })));
+    const seen = new Set(existingFps);
+    setRows(parseSms(t).map((r) => {
+      const dupe = seen.has(txnFingerprint(r));
+      if (!dupe) seen.add(txnFingerprint(r));
+      return { ...r, id: uid(), include: !dupe, dupe };
+    }));
   };
   const autoRead = async () => {
     setBusy("Requesting permission…");
@@ -32,13 +38,15 @@ export default function ImportSms({ wallets, onClose, onImport }) {
   const upd = (id, k, v) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, [k]: v } : r)));
   const importAll = () => {
     const chosen = rows.filter((r) => r.include && r.amount > 0);
+    const skipped = rows.filter((r) => r.dupe && !r.include).length;
     onImport(chosen.map((r) => ({
       id: uid(), type: r.type, amount: +r.amount, walletId,
-      date: r.date, note: r.note,
+      date: r.date, note: r.note, ref: r.ref,
       ...(r.type === "transfer" ? {} : { category: r.category }),
-    })));
+    })), skipped);
   };
   const count = rows.filter((r) => r.include).length;
+  const dupes = rows.filter((r) => r.dupe).length;
 
   return (
     <div className="sheet-overlay" onClick={onClose}>
@@ -64,7 +72,7 @@ export default function ImportSms({ wallets, onClose, onImport }) {
             </label>
           </div>
 
-          {rows.length > 0 && <div className="sms-found">{rows.length} detected</div>}
+          {rows.length > 0 && <div className="sms-found">{rows.length} detected{dupes ? ` · ${dupes} already imported` : ""}</div>}
           <div className="sms-list">
             {rows.map((r) => {
               const cats = r.type === "income" ? INCOME_CATS : EXPENSE_CATS;
@@ -75,6 +83,7 @@ export default function ImportSms({ wallets, onClose, onImport }) {
                     <div className="sms-line1">
                       <span className={"sms-type " + r.type}>{r.type}</span>
                       <span className="sms-amt"><i>৳</i><input inputMode="numeric" value={r.amount} onChange={(e) => upd(r.id, "amount", parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
+                      {r.dupe && <span className="sms-dupe">duplicate</span>}
                     </div>
                     <div className="sms-line2">
                       <select value={r.category} onChange={(e) => upd(r.id, "category", e.target.value)}>

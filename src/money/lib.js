@@ -98,6 +98,15 @@ export function loadMoney(email) {
 export function saveMoney(email, data) {
   try { localStorage.setItem(KEY(email), JSON.stringify(data)); } catch {}
 }
+export function emptyData() {
+  const w = { id: uid(), name: "Cash Wallet", kind: "cash", opening: 0, color: "#0ea372" };
+  return { wallets: [w], txns: [], budgets: [], loans: [], goals: [] };
+}
+// identity for dedup: a real transaction ref if we have one, else a fingerprint
+export const txnFingerprint = (t) =>
+  t.ref
+    ? "ref:" + String(t.ref).toLowerCase()
+    : [t.date, t.type, Math.round(t.amount || 0), String(t.note || "").toLowerCase().replace(/\s+/g, " ").trim().slice(0, 30)].join("|");
 function seed() {
   const w = { id: uid(), name: "Cash Wallet", kind: "cash", opening: 0, color: "#0ea372" };
   const fdr = { id: uid(), name: "FDR savings", kind: "fdr", opening: 500000, color: "#14b8a6" };
