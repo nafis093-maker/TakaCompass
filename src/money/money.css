@@ -348,3 +348,19 @@
 .ra-spon { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tx); margin-top: 4px; }
 .ra-spon input { width: 18px; height: 18px; accent-color: #0ea372; }
 .m-money.sm input { text-align: left; }
+
+/* home hero insight banner (top-priority) */
+.m-hero { display: block; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 16px; padding: 13px 15px; margin: 4px 0 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.m-hero .mh-tag { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+.m-hero b { display: block; font-size: 15px; font-weight: 800; margin: 3px 0; color: var(--tx); letter-spacing: -.01em; }
+.m-hero p { margin: 0; font-size: 12.5px; color: #6b7280; line-height: 1.45; }
+.m-hero .mh-go { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; margin-top: 8px; }
+.m-hero.warn { background: linear-gradient(135deg, #fff5e0, #fffaf2); border-color: #fde7b8; }
+.m-hero.warn .mh-tag, .m-hero.warn .mh-go { color: #d98a00; }
+.m-hero.alert { background: linear-gradient(135deg, #fef0f3, #fff6f8); border-color: #fcd5dd; }
+.m-hero.alert .mh-tag, .m-hero.alert .mh-go { color: #fa5a7d; }
+.m-hero.opp { background: linear-gradient(135deg, #eefaf4, #f6fdfa); border-color: #cdeede; }
+.m-hero.opp .mh-tag, .m-hero.opp .mh-go { color: #0ea372; }
+.m-hero.ok { background: linear-gradient(135deg, #e9f5fa, #f4fbfd); border-color: #cfeaf3; }
+.m-hero.ok .mh-tag, .m-hero.ok .mh-go { color: #0891b2; }
+.home-seg { margin-bottom: 14px; }

@@ -14,6 +14,8 @@ import ImportSms from "./ImportSms.jsx";
 import StatementImport from "./StatementImport.jsx";
 import RateAdmin from "./RateAdmin.jsx";
 import Plan from "./Plan.jsx";
+import { derive } from "./derive.js";
+import { buildInsights } from "./planlib.js";
 import { parseOne } from "./smsparse.js";
 import { isNative, watchSms, stopWatch } from "./native.js";
 
@@ -133,6 +135,10 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload }) {
   const month = txns.filter((t) => monthKey(t.date) === mk);
   const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const cats = useMemo(() => categoryBreakdown(txns, "expense", mk), [txns, mk]);
+  const d = useMemo(() => derive(data), [data]);
+  const insights = useMemo(() => buildInsights(d, Math.min(0.2 * d.monthlyIncome * 12, 1000000) * 0.5), [d]);
+  const hero = insights[0];
+  const [seg, setSeg] = useState("spend");
   const wname = (id) => wallets.find((w) => w.id === id)?.name || "Wallet";
 
   const sorted = [...txns].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
@@ -142,52 +148,94 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload }) {
     (g || groups[groups.push({ date: t.date, items: [] }) - 1]).items.push(t);
   });
 
+  const PRIORITY = hero && (hero.level === "alert" || hero.level === "warn");
+
   return (
     <div className="scr">
-      <div className="m-head"><div className="m-bignum">{tk(spent)}</div><div className="m-sublabel">Spent · {monthLabel(mk)}</div></div>
-      {cats.length > 0 ? (
-        <div className="m-spendov">
-          <Donut slices={cats} centerLabel={big(spent)} />
-          <div className="m-spendleg">
-            {cats.slice(0, 5).map((c) => (
-              <div key={c.key}><span className="sl-dot" style={{ background: c.color }} /><span className="sl-name">{c.label}</span><b>{Math.round(c.pct)}%</b></div>
-            ))}
-          </div>
-        </div>
-      ) : <p className="m-empty">No spending logged this month yet.</p>}
-      <div className="m-overrow">
-        <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> Full breakdown <ChevronRight size={16} /></button>
-        <button className="m-overview alt" onClick={openUpload}><FileText size={16} /> Statement</button>
-        <button className="m-overview alt" onClick={openImport}><MessageSquareText size={16} /> SMS</button>
+      <div className="m-head">
+        <div className="m-bignum">{tk(totalWealth(wallets, txns))}</div>
+        <div className="m-sublabel">Total wealth · {tk(spent)} spent in {monthLabel(mk)}</div>
       </div>
 
-      {groups.length === 0 && <p className="m-empty">No transactions yet. Tap + to add your first one.</p>}
-      {groups.map((g) => {
-        const dayTotal = g.items.reduce((s, t) => s + (t.type === "income" ? t.amount : t.type === "expense" ? -t.amount : 0), 0);
-        return (
-          <div className="m-group" key={g.date}>
-            <div className="m-grouphd"><span>{niceDate(g.date)}</span><span className={dayTotal >= 0 ? "pos" : "neg"}>{signed(dayTotal)}</span></div>
-            {g.items.map((t) => {
-              const c = catOf(t.category);
-              const isT = t.type === "transfer";
-              return (
-                <div className="m-txn" key={t.id} onClick={() => onEdit(t)}>
-                  <span className="m-txic" style={{ background: (isT ? "#94a3b8" : c.color) + "22", color: isT ? "#64748b" : c.color }}>
-                    {isT ? <ChevronRight size={20} /> : <c.Icon size={20} strokeWidth={2.2} />}
-                  </span>
-                  <div className="m-txmeta">
-                    <div className="m-txname">{isT ? "Transfer" : c.label}</div>
-                    <div className="m-txwallet">{wname(t.walletId)}{t.note ? " · " + t.note : ""}</div>
-                  </div>
-                  <div className={"m-txamt " + (t.type === "income" ? "pos" : t.type === "expense" ? "neg" : "")}>
-                    {t.type === "income" ? "+" : t.type === "expense" ? "-" : ""}{tk(t.amount)}
-                  </div>
-                </div>
-              );
-            })}
+      {hero && (
+        <button className={"m-hero " + hero.level} onClick={goPlan}>
+          <span className="mh-tag">{hero.tagText}{PRIORITY ? " · top priority" : ""}</span>
+          <b>{hero.title}</b>
+          <p>{hero.body}</p>
+          <span className="mh-go">Open plan <ChevronRight size={14} /></span>
+        </button>
+      )}
+
+      <div className="m-toggle home-seg">
+        <button className={seg === "spend" ? "on" : ""} onClick={() => setSeg("spend")}>Spending</button>
+        <button className={seg === "ins" ? "on" : ""} onClick={() => setSeg("ins")}>Insights{insights.length > 1 ? ` (${insights.length})` : ""}</button>
+        <button className={seg === "act" ? "on" : ""} onClick={() => setSeg("act")}>Activity</button>
+      </div>
+
+      {seg === "spend" && (
+        cats.length > 0 ? (
+          <>
+            <div className="m-spendov">
+              <Donut slices={cats} centerLabel={big(spent)} />
+              <div className="m-spendleg">
+                {cats.slice(0, 5).map((c) => (
+                  <div key={c.key}><span className="sl-dot" style={{ background: c.color }} /><span className="sl-name">{c.label}</span><b>{Math.round(c.pct)}%</b></div>
+                ))}
+              </div>
+            </div>
+            <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> Full breakdown <ChevronRight size={16} /></button>
+          </>
+        ) : <p className="m-empty">No spending logged this month yet.</p>
+      )}
+
+      {seg === "ins" && (
+        <div className="plan-cards" style={{ marginTop: 4 }}>
+          {insights.map((c, i) => (
+            <div className={"pcard " + c.level} key={i}>
+              <span className="pc-tag">{c.tagText}</span>
+              <b>{c.title}</b>
+              <p>{c.body}</p>
+            </div>
+          ))}
+          <button className="m-overview" style={{ alignSelf: "center" }} onClick={goPlan}><Sparkles size={16} /> Goals, tax &amp; projections <ChevronRight size={16} /></button>
+        </div>
+      )}
+
+      {seg === "act" && (
+        <>
+          <div className="m-overrow">
+            <button className="m-overview alt" onClick={openUpload}><FileText size={16} /> Statement</button>
+            <button className="m-overview alt" onClick={openImport}><MessageSquareText size={16} /> SMS</button>
           </div>
-        );
-      })}
+          {groups.length === 0 && <p className="m-empty">No transactions yet. Tap + to add your first one.</p>}
+          {groups.map((g) => {
+            const dayTotal = g.items.reduce((s, t) => s + (t.type === "income" ? t.amount : t.type === "expense" ? -t.amount : 0), 0);
+            return (
+              <div className="m-group" key={g.date}>
+                <div className="m-grouphd"><span>{niceDate(g.date)}</span><span className={dayTotal >= 0 ? "pos" : "neg"}>{signed(dayTotal)}</span></div>
+                {g.items.map((t) => {
+                  const c = catOf(t.category);
+                  const isT = t.type === "transfer";
+                  return (
+                    <div className="m-txn" key={t.id} onClick={() => onEdit(t)}>
+                      <span className="m-txic" style={{ background: (isT ? "#94a3b8" : c.color) + "22", color: isT ? "#64748b" : c.color }}>
+                        {isT ? <ChevronRight size={20} /> : <c.Icon size={20} strokeWidth={2.2} />}
+                      </span>
+                      <div className="m-txmeta">
+                        <div className="m-txname">{isT ? "Transfer" : c.label}</div>
+                        <div className="m-txwallet">{wname(t.walletId)}{t.note ? " · " + t.note : ""}</div>
+                      </div>
+                      <div className={"m-txamt " + (t.type === "income" ? "pos" : t.type === "expense" ? "neg" : "")}>
+                        {t.type === "income" ? "+" : t.type === "expense" ? "-" : ""}{tk(t.amount)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }
