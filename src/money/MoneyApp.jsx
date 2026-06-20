@@ -5,9 +5,9 @@ import {
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
-  loadMoney, saveMoney, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent,
+  loadMoney, saveMoney, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown,
 } from "./lib.js";
-import { CashflowBars, WealthLine } from "./charts.jsx";
+import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
 import AddAccount from "./AddAccount.jsx";
 import Plan from "./Plan.jsx";
@@ -77,8 +77,8 @@ function Timeline({ data, onEdit, goPlan }) {
   const { txns, wallets } = data;
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
-  const net = month.reduce((s, t) => s + (t.type === "income" ? t.amount : t.type === "expense" ? -t.amount : 0), 0);
-  const bars = useMemo(() => cashflowMonths(txns, 6), [txns]);
+  const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const cats = useMemo(() => categoryBreakdown(txns, "expense", mk), [txns, mk]);
   const wname = (id) => wallets.find((w) => w.id === id)?.name || "Wallet";
 
   const sorted = [...txns].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
@@ -90,9 +90,18 @@ function Timeline({ data, onEdit, goPlan }) {
 
   return (
     <div className="scr">
-      <div className="m-head"><div className="m-bignum">{tk(net)}</div><div className="m-sublabel">Cash flow · {monthLabel(mk)}</div></div>
-      <CashflowBars data={bars} />
-      <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> See your plan <ChevronRight size={16} /></button>
+      <div className="m-head"><div className="m-bignum">{tk(spent)}</div><div className="m-sublabel">Spent · {monthLabel(mk)}</div></div>
+      {cats.length > 0 ? (
+        <div className="m-spendov">
+          <Donut slices={cats} centerLabel={big(spent)} />
+          <div className="m-spendleg">
+            {cats.slice(0, 5).map((c) => (
+              <div key={c.key}><span className="sl-dot" style={{ background: c.color }} /><span className="sl-name">{c.label}</span><b>{Math.round(c.pct)}%</b></div>
+            ))}
+          </div>
+        </div>
+      ) : <p className="m-empty">No spending logged this month yet.</p>}
+      <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> Full breakdown <ChevronRight size={16} /></button>
 
       {groups.length === 0 && <p className="m-empty">No transactions yet. Tap + to add your first one.</p>}
       {groups.map((g) => {
