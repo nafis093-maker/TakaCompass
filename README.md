@@ -12,15 +12,24 @@ Built with Vite + React. Fully client-side, no backend, no env vars.
 
 ## Features
 
-- **Money manager home** (the main app): a clean, mobile, transaction-first
-  experience inspired by apps like Monarch/Spendee — a **Timeline** of
-  transactions grouped by day, **Wallets** with balances and a total-wealth line,
-  **Budgets** with progress bars, a **Stats** overview (cash-flow bars + category
-  donut), colorful category icons, and a quick add-transaction sheet. Everything
-  derives from your transactions; bottom-nav navigation; data saved per account.
-- The full **BD planner** (net worth, goals, tax, projections, loan/deposit rate
-  marketplace, insights) now lives under **More → Advanced planner**, so the daily
-  experience stays simple but the depth is one tap away.
+One app, simple input, deep analysis — the input is the easy part (transactions,
+wallets, loans, goals); the **Plan** tab turns it into everything else, with no
+double entry:
+
+- **Timeline** — add income/expense/transfer in a quick sheet with colorful
+  category icons; transactions grouped by day; monthly cash-flow bar chart.
+- **Wallets** — accounts with a *type* (Cash, Bank, FDR, Sanchayapatra, DPS,
+  Stocks, Gold) that sets its assumed return, plus **loans** you owe. Net worth =
+  assets − loans, with a wealth line over time.
+- **Budgets** — per-category limits with progress bars.
+- **Plan** — derived entirely from the above: an *Overview* (cash-flow + wealth
+  charts, spending donut), *Health* (net worth, emergency fund, debt ratio, real
+  growth, and personalized BD insights), *Goals* (feasibility math for a flat/car/
+  etc.), *Future* (net-worth projection + FY2026-27 tax estimate), and *Rates*
+  (the live loan/deposit marketplace).
+- **More** — profile, export JSON, sign out.
+
+Everything is saved per account in the browser.
 - **Cash flow / Net worth / Goals / Insights / Projection** tabs.
 - **Projection** plots your net worth 5–10 years out at your current surplus and
   blended return, with an inflation-adjusted ("today's taka") line overlaid.

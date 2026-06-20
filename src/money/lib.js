@@ -31,6 +31,22 @@ const ALL = {};
 [...EXPENSE_CATS, ...INCOME_CATS].forEach((c) => (ALL[c.key] = c));
 export const catOf = (key) => ALL[key] || { key, label: "Other", Icon: Tag, color: "#94a3b8" };
 
+// ---- wallet kinds drive both balances and the planner's return assumptions ---
+export const WALLET_KINDS = [
+  { key: "cash", label: "Cash", ret: 1, group: "Liquid", color: "#0ea372" },
+  { key: "bank", label: "Bank account", ret: 4, group: "Liquid", color: "#0891b2" },
+  { key: "fdr", label: "FDR", ret: 9, group: "Liquid", color: "#14b8a6" },
+  { key: "sanchayapatra", label: "Sanchayapatra", ret: 11.83, group: "Fixed-income", color: "#10b981" },
+  { key: "dps", label: "DPS", ret: 10, group: "Fixed-income", color: "#22c55e" },
+  { key: "stocks", label: "Stocks (DSE)", ret: 15, group: "Equity", color: "#8b5cf6" },
+  { key: "gold", label: "Gold", ret: 8, group: "Gold", color: "#f59e0b" },
+  { key: "other", label: "Other asset", ret: 5, group: "Other", color: "#94a3b8" },
+];
+const KIND = {};
+WALLET_KINDS.forEach((k) => (KIND[k.key] = k));
+export const kindOf = (key) => KIND[key] || KIND.cash;
+export const LIQUID_KINDS = new Set(["cash", "bank", "fdr"]);
+
 // ---- formatting ------------------------------------------------------------
 export const tk = (n) => "৳" + Math.round(Math.abs(n)).toLocaleString("en-US");
 export const signed = (n) => (n < 0 ? "-" : n > 0 ? "+" : "") + tk(n);
@@ -69,7 +85,13 @@ const KEY = (email) => `taka:money:${email || "guest"}`;
 export function loadMoney(email) {
   try {
     const d = JSON.parse(localStorage.getItem(KEY(email)));
-    if (d && d.wallets) return d;
+    if (d && d.wallets) {
+      d.budgets = d.budgets || [];
+      d.loans = d.loans || [];
+      d.goals = d.goals || [];
+      d.wallets.forEach((w) => (w.kind = w.kind || "cash"));
+      return d;
+    }
   } catch {}
   return seed();
 }
@@ -77,14 +99,17 @@ export function saveMoney(email, data) {
   try { localStorage.setItem(KEY(email), JSON.stringify(data)); } catch {}
 }
 function seed() {
-  const w = { id: uid(), name: "Cash Wallet", opening: 0, color: "#0ea372" };
+  const w = { id: uid(), name: "Cash Wallet", kind: "cash", opening: 0, color: "#0ea372" };
+  const fdr = { id: uid(), name: "FDR savings", kind: "fdr", opening: 500000, color: "#14b8a6" };
   return {
-    wallets: [w],
+    wallets: [w, fdr],
     txns: [
       { id: uid(), type: "income", amount: 197000, category: "salary", walletId: w.id, date: today(), note: "" },
       { id: uid(), type: "expense", amount: 50000, category: "shopping", walletId: w.id, date: today(), note: "" },
     ],
     budgets: [{ id: uid(), name: "Shopping", amount: 60000, category: "shopping" }],
+    loans: [{ id: uid(), name: "Car loan", bal: 600000, rate: 13.5, emi: 18000 }],
+    goals: [{ id: uid(), name: "Flat", cost: 8000000, dp: 25, rate: 13, tenure: 20, years: 5 }],
   };
 }
 

@@ -1,23 +1,22 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Receipt, Wallet as WalletIcon, PiggyBank, BarChart3, MoreHorizontal,
-  Plus, ChevronRight, ChevronLeft, PieChart, Sparkles, Store, Download, LogOut, Search,
+  Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
+  Plus, ChevronRight, Banknote, Download, LogOut,
 } from "lucide-react";
 import {
-  EXPENSE_CATS, catOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
-  loadMoney, saveMoney, walletBalance, totalWealth, cashflowMonths, wealthSeries,
-  categoryBreakdown, budgetSpent,
+  EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
+  loadMoney, saveMoney, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent,
 } from "./lib.js";
-import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
+import { CashflowBars, WealthLine } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
-import Dashboard from "../Dashboard.jsx";
-import { loadData, saveData } from "../lib/storage.js";
+import AddAccount from "./AddAccount.jsx";
+import Plan from "./Plan.jsx";
 
 const NAV = [
   { key: "timeline", label: "Timeline", Icon: Receipt },
   { key: "wallets", label: "Wallets", Icon: WalletIcon },
   { key: "budgets", label: "Budgets", Icon: PiggyBank },
-  { key: "stats", label: "Stats", Icon: BarChart3 },
+  { key: "plan", label: "Plan", Icon: Sparkles },
   { key: "more", label: "More", Icon: MoreHorizontal },
 ];
 
@@ -26,40 +25,36 @@ export default function MoneyApp({ user, onSignOut }) {
   const [tab, setTab] = useState("timeline");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [subview, setSubview] = useState(null);
+  const [addAcct, setAddAcct] = useState(false);
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
+  const { wallets, txns, budgets, loans = [], goals = [] } = data;
 
-  const { wallets, txns, budgets } = data;
   const saveTxn = (t) => {
     setData((d) => ({ ...d, txns: d.txns.some((x) => x.id === t.id) ? d.txns.map((x) => (x.id === t.id ? t : x)) : [...d.txns, t] }));
     setAdding(false); setEditing(null);
   };
   const delTxn = (id) => setData((d) => ({ ...d, txns: d.txns.filter((t) => t.id !== id) }));
-  const addWallet = (name) => name && setData((d) => ({ ...d, wallets: [...d.wallets, { id: uid(), name, opening: 0, color: "#0ea372" }] }));
+  const addWallet = (w) => setData((d) => ({ ...d, wallets: [...d.wallets, w] }));
+  const delWallet = (id) => setData((d) => ({ ...d, wallets: d.wallets.filter((w) => w.id !== id) }));
+  const addLoan = (l) => setData((d) => ({ ...d, loans: [...(d.loans || []), l] }));
+  const delLoan = (id) => setData((d) => ({ ...d, loans: (d.loans || []).filter((l) => l.id !== id) }));
   const addBudget = (b) => setData((d) => ({ ...d, budgets: [...d.budgets, { ...b, id: uid() }] }));
   const delBudget = (id) => setData((d) => ({ ...d, budgets: d.budgets.filter((b) => b.id !== id) }));
-
-  if (subview === "planner") {
-    return (
-      <div className="planner-wrap">
-        <button className="planner-back" onClick={() => setSubview(null)}><ChevronLeft size={18} /> Back to money</button>
-        <Dashboard initial={loadData(user.email)} onPersist={(d) => saveData(user.email, d)} user={user} onSignOut={onSignOut} />
-      </div>
-    );
-  }
+  const addGoal = (g) => setData((d) => ({ ...d, goals: [...(d.goals || []), { ...g, id: uid() }] }));
+  const delGoal = (id) => setData((d) => ({ ...d, goals: (d.goals || []).filter((g) => g.id !== id) }));
 
   return (
     <div className="m-app">
       <div className="m-screen">
-        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} onDel={delTxn} goStats={() => setTab("stats")} />}
-        {tab === "wallets" && <Wallets data={data} addWallet={addWallet} />}
+        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} />}
+        {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
-        {tab === "stats" && <Stats data={data} />}
-        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} openPlanner={() => setSubview("planner")} />}
+        {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
+        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} />}
       </div>
 
-      {tab !== "more" && (
+      {tab === "timeline" && (
         <button className="m-fab" onClick={() => { setEditing(null); setAdding(true); }} aria-label="Add transaction"><Plus size={26} strokeWidth={2.6} /></button>
       )}
 
@@ -73,12 +68,12 @@ export default function MoneyApp({ user, onSignOut }) {
       </nav>
 
       {adding && <AddTxn wallets={wallets} initial={editing} onClose={() => { setAdding(false); setEditing(null); }} onSave={saveTxn} />}
+      {addAcct && <AddAccount onClose={() => setAddAcct(false)} onAddWallet={(w) => { addWallet(w); setAddAcct(false); }} onAddLoan={(l) => { addLoan(l); setAddAcct(false); }} />}
     </div>
   );
 }
 
-// ---------------- Timeline ----------------
-function Timeline({ data, onEdit, onDel, goStats }) {
+function Timeline({ data, onEdit, goPlan }) {
   const { txns, wallets } = data;
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
@@ -95,12 +90,9 @@ function Timeline({ data, onEdit, onDel, goStats }) {
 
   return (
     <div className="scr">
-      <div className="m-head">
-        <div className="m-bignum">{tk(net)}</div>
-        <div className="m-sublabel">Cash flow · {monthLabel(mk)}</div>
-      </div>
+      <div className="m-head"><div className="m-bignum">{tk(net)}</div><div className="m-sublabel">Cash flow · {monthLabel(mk)}</div></div>
       <CashflowBars data={bars} />
-      <button className="m-overview" onClick={goStats}><PieChart size={16} /> Spending overview <ChevronRight size={16} /></button>
+      <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> See your plan <ChevronRight size={16} /></button>
 
       {groups.length === 0 && <p className="m-empty">No transactions yet. Tap + to add your first one.</p>}
       {groups.map((g) => {
@@ -133,35 +125,45 @@ function Timeline({ data, onEdit, onDel, goStats }) {
   );
 }
 
-// ---------------- Wallets ----------------
-function Wallets({ data, addWallet }) {
-  const { wallets, txns } = data;
-  const total = totalWealth(wallets, txns);
+function Wallets({ data, onAdd, delWallet, delLoan }) {
+  const { wallets, txns, loans = [] } = data;
+  const assets = totalWealth(wallets, txns);
+  const owed = loans.reduce((s, l) => s + l.bal, 0);
+  const net = assets - owed;
   const series = useMemo(() => wealthSeries(wallets, txns, 6), [wallets, txns]);
   return (
     <div className="scr">
-      <div className="m-head">
-        <div className="m-bignum">{tk(total)}</div>
-        <div className="m-sublabel">Total wealth</div>
-      </div>
+      <div className="m-head"><div className="m-bignum">{tk(net)}</div><div className="m-sublabel">Net worth · {tk(assets)} assets − {tk(owed)} loans</div></div>
       <WealthLine data={series} />
+      <div className="plan-sec">Accounts</div>
       <div className="m-list">
         {wallets.map((w) => (
-          <div className="m-wallet" key={w.id}>
-            <span className="m-wic" style={{ background: w.color + "22", color: w.color }}><WalletIcon size={20} /></span>
-            <div className="m-wmeta"><div className="m-wname">{w.name}</div></div>
+          <div className="m-wallet" key={w.id} onClick={() => { if (confirm("Remove " + w.name + "?")) delWallet(w.id); }}>
+            <span className="m-wic" style={{ background: kindOf(w.kind).color + "22", color: kindOf(w.kind).color }}><WalletIcon size={20} /></span>
+            <div className="m-wmeta"><div className="m-wname">{w.name}</div><div className="m-txwallet">{kindOf(w.kind).label}</div></div>
             <div className="m-wbal">{tk(walletBalance(w, txns))}</div>
           </div>
         ))}
       </div>
-      <button className="m-addrow" onClick={() => { const n = prompt("Wallet name (e.g. bKash, Bank, Savings)"); addWallet(n && n.trim()); }}>
-        <Plus size={18} /> Add a wallet
-      </button>
+      {loans.length > 0 && (
+        <>
+          <div className="plan-sec">Loans (you owe)</div>
+          <div className="m-list">
+            {loans.map((l) => (
+              <div className="m-wallet" key={l.id} onClick={() => { if (confirm("Remove " + l.name + "?")) delLoan(l.id); }}>
+                <span className="m-wic" style={{ background: "#fa5a7d22", color: "#fa5a7d" }}><Banknote size={20} /></span>
+                <div className="m-wmeta"><div className="m-wname">{l.name}</div><div className="m-txwallet">{l.rate}% · EMI {tk(l.emi)}</div></div>
+                <div className="m-wbal neg">-{tk(l.bal)}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      <button className="m-addrow" onClick={onAdd}><Plus size={18} /> Add account or loan</button>
     </div>
   );
 }
 
-// ---------------- Budgets ----------------
 function Budgets({ data, addBudget, delBudget }) {
   const { budgets, txns } = data;
   const [open, setOpen] = useState(false);
@@ -169,13 +171,11 @@ function Budgets({ data, addBudget, delBudget }) {
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState("all");
   const mk = today().slice(0, 7);
-
   const create = () => {
     if (!name.trim() || amount <= 0) return;
     addBudget({ name: name.trim(), amount: +amount, category });
     setName(""); setAmount(0); setCategory("all"); setOpen(false);
   };
-
   return (
     <div className="scr">
       <div className="m-title">Budgets</div>
@@ -188,19 +188,13 @@ function Budgets({ data, addBudget, delBudget }) {
           const over = spent > b.amount;
           return (
             <div className="m-budget" key={b.id} onClick={() => { if (confirm("Delete this budget?")) delBudget(b.id); }}>
-              <div className="m-budgethd">
-                <span className="m-bname">{b.name}</span>
-                <span className="m-bcat">{b.category === "all" ? "All expenses" : catOf(b.category).label}</span>
-              </div>
-              <div className={"m-bleft " + (over ? "neg" : "pos")}>
-                {over ? tk(-left) + " over" : tk(left) + " left"} <small>of {tk(b.amount)}</small>
-              </div>
+              <div className="m-budgethd"><span className="m-bname">{b.name}</span><span className="m-bcat">{b.category === "all" ? "All expenses" : catOf(b.category).label}</span></div>
+              <div className={"m-bleft " + (over ? "neg" : "pos")}>{over ? tk(-left) + " over" : tk(left) + " left"} <small>of {tk(b.amount)}</small></div>
               <div className="m-bbar"><span className={over ? "over" : ""} style={{ width: pct + "%" }}>{Math.round((spent / (b.amount || 1)) * 100)}%</span></div>
             </div>
           );
         })}
       </div>
-
       {open ? (
         <div className="m-bform">
           <input placeholder="Budget name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -211,10 +205,7 @@ function Budgets({ data, addBudget, delBudget }) {
               {EXPENSE_CATS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
           </div>
-          <div className="m-bform-actions">
-            <button className="ghost" onClick={() => setOpen(false)}>Cancel</button>
-            <button className="primary" onClick={create}>Create budget</button>
-          </div>
+          <div className="m-bform-actions"><button className="ghost" onClick={() => setOpen(false)}>Cancel</button><button className="primary" onClick={create}>Create budget</button></div>
         </div>
       ) : (
         <button className="m-create" onClick={() => setOpen(true)}><Plus size={18} /> Create a new budget</button>
@@ -223,83 +214,11 @@ function Budgets({ data, addBudget, delBudget }) {
   );
 }
 
-// ---------------- Stats / Overview ----------------
-function Stats({ data }) {
-  const { wallets, txns } = data;
-  const [view, setView] = useState("cashflow");
-  const [ctype, setCtype] = useState("expense");
-  const mk = today().slice(0, 7);
-  const bars = useMemo(() => cashflowMonths(txns, 6), [txns]);
-  const series = useMemo(() => wealthSeries(wallets, txns, 6), [wallets, txns]);
-  const breakdown = useMemo(() => categoryBreakdown(txns, ctype, mk), [txns, ctype, mk]);
-  const month = txns.filter((t) => monthKey(t.date) === mk);
-  const income = month.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
-  const expense = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
-
-  return (
-    <div className="scr">
-      <div className="m-title">Overview</div>
-      <div className="m-toggle">
-        <button className={view === "cashflow" ? "on" : ""} onClick={() => setView("cashflow")}>Cash flow</button>
-        <button className={view === "wealth" ? "on" : ""} onClick={() => setView("wealth")}>Total wealth</button>
-      </div>
-
-      {view === "wealth" ? (
-        <>
-          <div className="m-statbig">{tk(totalWealth(wallets, txns))}<small>total wealth</small></div>
-          <WealthLine data={series} />
-          <div className="m-list">
-            {wallets.map((w) => (
-              <div className="m-wallet" key={w.id}>
-                <span className="m-wic" style={{ background: w.color + "22", color: w.color }}><WalletIcon size={18} /></span>
-                <div className="m-wmeta"><div className="m-wname">{w.name}</div></div>
-                <div className="m-wbal">{tk(walletBalance(w, txns))}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="m-cfsplit">
-            <div className="cf in"><span>Income</span><b>{tk(income)}</b></div>
-            <div className="cf out"><span>Expenses</span><b>{tk(expense)}</b></div>
-          </div>
-          <CashflowBars data={bars} />
-          <div className="m-cathd">
-            <span>Categories · {monthLabel(mk)}</span>
-            <div className="m-cattoggle">
-              <button className={ctype === "expense" ? "on" : ""} onClick={() => setCtype("expense")}>Expenses</button>
-              <button className={ctype === "income" ? "on" : ""} onClick={() => setCtype("income")}>Income</button>
-            </div>
-          </div>
-          {breakdown.length === 0 ? <p className="m-empty">Nothing here for {monthLabel(mk)} yet.</p> : (
-            <>
-              <div className="m-donutwrap"><Donut slices={breakdown} /></div>
-              <div className="m-list">
-                {breakdown.map((c) => (
-                  <div className="m-catline" key={c.key}>
-                    <span className="m-txic" style={{ background: c.color + "22", color: c.color }}><c.Icon size={18} strokeWidth={2.2} /></span>
-                    <div className="m-catmeta"><div className="m-txname">{c.label}</div><div className="m-txwallet">{Math.round(c.pct)}%</div></div>
-                    <div className="m-txamt">{tk(c.amount)}</div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// ---------------- More ----------------
-function More({ data, user, onSignOut, openPlanner }) {
+function More({ data, user, onSignOut }) {
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "taka-compass-data.json";
-    a.click();
+    a.href = URL.createObjectURL(blob); a.download = "taka-compass-data.json"; a.click();
   };
   return (
     <div className="scr">
@@ -309,14 +228,10 @@ function More({ data, user, onSignOut, openPlanner }) {
         <div><div className="m-pname">{user.name}</div><div className="m-pmail">{user.email}</div></div>
       </div>
       <div className="m-menu">
-        <button onClick={openPlanner}><span className="mm-ic" style={{ color: "#0ea372" }}><Sparkles size={20} /></span>
-          <span className="mm-txt"><b>Advanced planner & insights</b><i>Net worth, goals, tax, projections + loan/deposit rate marketplace</i></span><ChevronRight size={18} /></button>
-        <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span>
-          <span className="mm-txt"><b>Export my data</b><i>Download everything as JSON</i></span><ChevronRight size={18} /></button>
-        <button onClick={onSignOut}><span className="mm-ic" style={{ color: "#fa5a7d" }}><LogOut size={20} /></span>
-          <span className="mm-txt"><b>Sign out</b></span><ChevronRight size={18} /></button>
+        <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON</i></span><ChevronRight size={18} /></button>
+        <button onClick={onSignOut}><span className="mm-ic" style={{ color: "#fa5a7d" }}><LogOut size={20} /></span><span className="mm-txt"><b>Sign out</b></span><ChevronRight size={18} /></button>
       </div>
-      <p className="m-note">Your data lives in this browser, tied to your sign-in. There's no bank auto-sync — Bangladesh has no open-banking feed yet, so transactions are added manually (which also keeps your data fully private to you).</p>
+      <p className="m-note">One app: log income, spending, wallets, loans and goals the simple way — the Plan tab turns it all into net worth, budgets, tax, projections and live loan/deposit rates automatically. Your data stays in this browser; there's no bank auto-sync (Bangladesh has no open-banking feed yet), which also keeps it fully private to you.</p>
     </div>
   );
 }
