@@ -39,6 +39,53 @@ function refFrom(line) {
 function isTransfer(desc) {
   return /tran(?:sfer)?\s+for\s+funding|closure\s+proceeds|ibanking\s+trf|fund\s+transfer|\btrf\s+to\s+\d|\btrf\s+from\s+\d|crtr\/nps|nps\s+online|own\s+a\/c/i.test(desc) || undefined;
 }
+
+const BANKS = [
+  [/brac bank|brakbddh|\bbrak\b/i, "BRAC Bank"],
+  [/standard chartered|super savers|\bscblbddh\b|\bscb\b/i, "Standard Chartered"],
+  [/the city bank|city bank/i, "City Bank"],
+  [/dutch[- ]?bangla|\bdbbl\b|nexus/i, "Dutch-Bangla Bank"],
+  [/eastern bank|\bebl\b/i, "Eastern Bank"],
+  [/islami bank|\bibbl\b/i, "Islami Bank"],
+  [/mutual trust|\bmtb\b/i, "Mutual Trust Bank"],
+  [/united commercial|\bucb\b/i, "UCB"],
+  [/prime bank/i, "Prime Bank"], [/pubali/i, "Pubali Bank"], [/sonali/i, "Sonali Bank"],
+  [/agrani/i, "Agrani Bank"], [/janata/i, "Janata Bank"], [/bank asia/i, "Bank Asia"],
+  [/dhaka bank/i, "Dhaka Bank"], [/\bhsbc\b/i, "HSBC"], [/jamuna/i, "Jamuna Bank"],
+  [/trust bank/i, "Trust Bank"], [/\bncc\b/i, "NCC Bank"], [/southeast/i, "Southeast Bank"],
+  [/\bific\b/i, "IFIC Bank"], [/one bank/i, "ONE Bank"], [/midland/i, "Midland Bank"],
+  [/mercantile/i, "Mercantile Bank"], [/premier bank/i, "Premier Bank"],
+];
+function detectBank(text) {
+  for (const [re, name] of BANKS) if (re.test(text)) return name;
+  return "Bank";
+}
+function kindFromType(t) {
+  const s = (t || "").toLowerCase();
+  if (/fixed|term deposit|\bfdr\b|\bfd\b/.test(s)) return "fdr";
+  if (/\bdps\b|deposit pension|monthly deposit|scheme/.test(s)) return "dps";
+  if (/sanchay|savings certificate/.test(s)) return "sanchayapatra";
+  return "bank";
+}
+function extractMeta(rows) {
+  const full = rows.map((r) => r.text).join("\n");
+  let accountNo = "", accountType = "", availBalance = null;
+  for (const r of rows) {
+    const m = r.text.match(/account\s*(?:no\.?|number|a\/c\s*no\.?|#)\s*:?\s*([0-9][0-9-]{5,})/i);
+    if (m) { accountNo = m[1].replace(/-/g, ""); break; }
+  }
+  for (const r of rows) {
+    const m = r.text.match(/account\s*type\s*:?\s*([A-Za-z][A-Za-z /&'-]{1,34})/i);
+    if (m && m[1].trim()) { accountType = m[1].trim(); break; }
+  }
+  for (const r of rows) {
+    const m = r.text.match(/(?:available|ledger|closing|current|outstanding)\s*balance\s*:?\s*([\d,]+\.\d{2})/i);
+    if (m) { availBalance = parseFloat(m[1].replace(/,/g, "")); break; }
+  }
+  const isLoan = /loan|overdraft|credit card/i.test(accountType) ||
+    /loan account|outstanding principal|disbursed|installment|\bemi\b|repayment schedule/i.test(full);
+  return { accountNo, accountType, bank: detectBank(full), isLoan, kind: kindFromType(accountType), availBalance };
+}
 const isMoney = (s) => MONEY_TOK.test(s.trim());
 const val = (s) => parseFloat(s.replace(/[(),]/g, "").replace(/[^0-9.\-]/g, ""));
 
@@ -71,7 +118,7 @@ function findAnchors(rows) {
 function parseByColumns(rows, anchors) {
   const { W, D, B } = anchors;
   const out = [];
-  let opening = null;
+  let opening = null, closing = null;
   for (const r of rows) {
     const date = parseDate(r.text);
     if (!date) continue;
@@ -93,10 +140,11 @@ function parseByColumns(rows, anchors) {
     else continue;
     if (!amount || amount <= 0) continue;
     if (opening == null && bal != null) opening = bal - (type === "income" ? amount : -amount);
+    if (bal != null) closing = bal;
     const desc = descFromTokens(r.tokens);
     out.push({ type, amount, category: guessCategory(desc.toLowerCase(), desc, type), note: desc, date, ref: refFrom(r.text) || undefined, transfer: isTransfer(desc), raw: r.text, balance: bal });
   }
-  return { txns: out, opening };
+  return { txns: out, opening, closing };
 }
 
 // Fallback when no column headers found: balance-delta on plain text lines.
@@ -124,14 +172,18 @@ function parseByDelta(lines) {
     else if (r.balance != null && prev != null) type = r.balance >= prev ? "income" : "expense";
     else type = "expense";
     if (r.balance != null) prev = r.balance;
-    out.push({ type, amount: r.amount, category: guessCategory(r.desc.toLowerCase(), r.desc, type), note: r.desc, date: r.date, ref: refFrom(r.line) || undefined, raw: r.line, balance: r.balance });
+    out.push({ type, amount: r.amount, category: guessCategory(r.desc.toLowerCase(), r.desc, type), note: r.desc, date: r.date, ref: refFrom(r.line) || undefined, transfer: isTransfer(r.desc), raw: r.line, balance: r.balance });
   }
-  return { txns: out, opening: null };
+  const closing = out.length ? out[out.length - 1].balance : null;
+  return { txns: out, opening: null, closing };
 }
 
 // Accepts rows of {text, tokens:[{x,s}]} (column-aware) or plain strings (delta).
 export function parseStatement(input) {
   const rows = input.map((r) => (typeof r === "string" ? { text: r, tokens: null } : r));
+  const meta = extractMeta(rows);
   const anchors = rows.some((r) => r.tokens) ? findAnchors(rows) : null;
-  return anchors ? parseByColumns(rows, anchors) : parseByDelta(rows.map((r) => r.text));
+  const res = anchors ? parseByColumns(rows, anchors) : parseByDelta(rows.map((r) => r.text));
+  if (res.closing == null && meta.availBalance != null) res.closing = meta.availBalance;
+  return { ...res, meta };
 }

@@ -309,3 +309,42 @@
 .stmt-oprow input { width: 18px; height: 18px; accent-color: #0ea372; }
 .stmt-oprow b { font-weight: 700; }
 .sms-xfer { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #6d28d9; background: #ede9fe; border-radius: 999px; padding: 3px 8px; }
+
+/* statement account-detection card */
+.stmt-detect { display: flex; align-items: center; gap: 10px; margin-top: 10px; background: #f7f9fb; border-radius: 12px; padding: 10px; }
+.sd-ic { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex: none; }
+.sd-meta { flex: 1; min-width: 0; }
+.sd-name { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-sub { font-size: 11.5px; color: var(--mut); }
+.sd-override { border: 1px solid var(--line); border-radius: 9px; padding: 7px 8px; font-size: 12px; background: #fff; color: var(--tx); max-width: 120px; }
+
+/* ===== Desktop / PC framing (app is mobile-first) ===== */
+@media (min-width: 700px) {
+  body { background: #e7ebf0; }
+  .m-app { min-height: 100vh; box-shadow: 0 0 0 1px rgba(15,38,28,.06), 0 24px 70px -28px rgba(15,38,28,.35); }
+  .m-nav { box-shadow: 0 -1px 0 rgba(15,38,28,.04), 0 0 0 1px rgba(15,38,28,.05); }
+}
+
+/* rate admin */
+.ra-bar { position: sticky; top: 0; z-index: 10; padding: 10px 12px 0; }
+.ra-bar .planner-back { position: static; box-shadow: none; padding: 8px 12px; }
+.ra-actions { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.ra-actions .m-create { margin-top: 0; flex: 1; }
+.ra-refresh { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 13px; color: #0ea372; cursor: pointer; }
+.ra-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+.ra-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.ra-name { font-weight: 800; font-size: 15px; }
+.ra-cat { font-size: 11px; font-weight: 600; color: var(--mut); background: #f0f3f6; border-radius: 999px; padding: 2px 8px; margin-left: 4px; }
+.ra-rate { font-size: 18px; font-weight: 800; color: #0ea372; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ra-btns { display: flex; gap: 6px; }
+.ra-btns button { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: var(--mut); cursor: pointer; display: flex; align-items: center; }
+.ra-srcrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.ra-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #2563eb; text-decoration: none; font-weight: 700; }
+.ra-check { border: 1px solid #cdeede; background: #f3faf7; color: #0ea372; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.ra-checked { font-size: 11px; color: var(--mut); }
+.ra-form2 { display: flex; gap: 8px; margin: 8px 0; }
+.ra-form2 > * { flex: 1; }
+.ra-form2 select { border: 1px solid var(--line); border-radius: 10px; padding: 11px; font-size: 14px; background: #fff; color: var(--tx); }
+.ra-spon { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tx); margin-top: 4px; }
+.ra-spon input { width: 18px; height: 18px; accent-color: #0ea372; }
+.m-money.sm input { text-align: left; }

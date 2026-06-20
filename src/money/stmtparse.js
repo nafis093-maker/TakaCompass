@@ -33,7 +33,7 @@ export async function extractRows(file, password) {
 
 export async function parsePdf(file, password) {
   const rows = await extractRows(file, password);
-  const { txns, opening } = parseStatement(rows);
+  const { txns, opening, closing, meta } = parseStatement(rows);
   const textFound = rows.reduce((n, r) => n + r.text.length, 0);
-  return { txns, opening, rowCount: rows.length, textFound };
+  return { txns, opening, closing, meta, rowCount: rows.length, textFound };
 }

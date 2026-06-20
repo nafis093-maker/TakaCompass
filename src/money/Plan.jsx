@@ -6,6 +6,7 @@ import {
 import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import { derive } from "./derive.js";
 import { RATES, taxBD, realReturn, projectSeries, goalEval, buildInsights, emi } from "./planlib.js";
+import { loadSources, adminToCatalog } from "./rateadmin.js";
 import Marketplace from "../components/Marketplace.jsx";
 
 const SEGS = ["Overview", "Health", "Goals", "Future", "Rates"];
@@ -26,13 +27,18 @@ export default function Plan({ data, addGoal, delGoal }) {
       {seg === "Health" && <Health d={d} />}
       {seg === "Goals" && <Goals d={d} addGoal={addGoal} delGoal={delGoal} />}
       {seg === "Future" && <Future d={d} />}
-      {seg === "Rates" && (
-        <Marketplace
-          idleCash={Math.max(0, d.liquid - d.essentialMonthly * 6)}
-          goalLoan={d.goals[0] ? { amount: d.goals[0].cost * (1 - d.goals[0].dp / 100), years: d.goals[0].tenure, cat: /flat|home|house/i.test(d.goals[0].name) ? "home-loan" : /car/i.test(d.goals[0].name) ? "car-loan" : "personal-loan" } : null}
-          rates={RATES}
-        />
-      )}
+      {seg === "Rates" && (() => {
+        const { extra, extraInst } = adminToCatalog(loadSources());
+        return (
+          <Marketplace
+            idleCash={Math.max(0, d.liquid - d.essentialMonthly * 6)}
+            goalLoan={d.goals[0] ? { amount: d.goals[0].cost * (1 - d.goals[0].dp / 100), years: d.goals[0].tenure, cat: /flat|home|house/i.test(d.goals[0].name) ? "home-loan" : /car/i.test(d.goals[0].name) ? "car-loan" : "personal-loan" } : null}
+            rates={RATES}
+            extraProducts={extra}
+            extraInst={extraInst}
+          />
+        );
+      })()}
     </div>
   );
 }

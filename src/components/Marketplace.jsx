@@ -17,7 +17,9 @@ function emi(P, rate, years) {
   return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 }
 
-export default function Marketplace({ idleCash = 0, goalLoan, rates }) {
+export default function Marketplace({ idleCash = 0, goalLoan, rates, extraProducts = [], extraInst = {} }) {
+  const INSTX = { ...INST, ...extraInst };
+  const PRODUCTSX = [...PRODUCTS, ...extraProducts];
   const [mode, setMode] = useState(goalLoan && goalLoan.amount > 0 ? "borrow" : "save");
   const [bcat, setBcat] = useState(goalLoan?.cat || "home-loan");
   const [scat, setScat] = useState("fdr");
@@ -27,11 +29,11 @@ export default function Marketplace({ idleCash = 0, goalLoan, rates }) {
   const [tenure, setTenure] = useState(goalLoan?.years || 5);
 
   const cat = mode === "borrow" ? bcat : scat;
-  const list = PRODUCTS.filter((p) => p.cat === cat);
+  const list = PRODUCTSX.filter((p) => p.cat === cat);
 
   const ranked = list
     .map((p) => {
-      const inst = INST[p.inst];
+      const inst = INSTX[p.inst];
       if (mode === "borrow") {
         const yrs = Math.min(tenure, p.tenureMax);
         const m = emi(amount, p.rate, yrs);

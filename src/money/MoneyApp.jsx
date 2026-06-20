@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
-  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2,
+  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
@@ -12,6 +12,7 @@ import AddTxn from "./AddTxn.jsx";
 import AddAccount from "./AddAccount.jsx";
 import ImportSms from "./ImportSms.jsx";
 import StatementImport from "./StatementImport.jsx";
+import RateAdmin from "./RateAdmin.jsx";
 import Plan from "./Plan.jsx";
 import { parseOne } from "./smsparse.js";
 import { isNative, watchSms, stopWatch } from "./native.js";
@@ -33,6 +34,7 @@ export default function MoneyApp({ user, onSignOut }) {
   const [importing, setImporting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState("");
+  const [adminOpen, setAdminOpen] = useState(false);
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(""), 3500); return () => clearTimeout(id); }, [toast]);
@@ -51,22 +53,28 @@ export default function MoneyApp({ user, onSignOut }) {
 
   const { wallets, txns, budgets, loans = [], goals = [] } = data;
 
-  const importTxns = (list, skipped = 0, openings = []) => {
-    setData((d) => {
-      let wallets = d.wallets;
-      if (openings && openings.length) {
-        wallets = d.wallets.map((w) => {
-          const o = openings.find((x) => x.walletId === w.id);
-          return o ? { ...w, opening: o.opening } : w;
-        });
-      }
-      return { ...d, wallets, txns: list && list.length ? [...d.txns, ...list] : d.txns };
-    });
-    setImporting(false); setUploading(false);
+  const importTxns = (list, skipped = 0) => {
+    if (list && list.length) setData((d) => ({ ...d, txns: [...d.txns, ...list] }));
+    setImporting(false);
     const n = list ? list.length : 0;
     const parts = [`Imported ${n} transaction${n === 1 ? "" : "s"}`];
     if (skipped) parts.push(`${skipped} duplicate${skipped === 1 ? "" : "s"} skipped`);
     setToast(n || skipped ? parts.join(" · ") : "Nothing to import");
+  };
+  const importStatement = ({ txns = [], skipped = 0, newWallets = [], newLoans = [] }) => {
+    setData((d) => ({
+      ...d,
+      wallets: newWallets.length ? [...d.wallets, ...newWallets] : d.wallets,
+      loans: newLoans.length ? [...(d.loans || []), ...newLoans] : (d.loans || []),
+      txns: txns.length ? [...d.txns, ...txns] : d.txns,
+    }));
+    setUploading(false);
+    const created = newWallets.length + newLoans.length;
+    const parts = [];
+    if (created) parts.push(`${created} account${created === 1 ? "" : "s"} added`);
+    parts.push(`${txns.length} transaction${txns.length === 1 ? "" : "s"} imported`);
+    if (skipped) parts.push(`${skipped} duplicate${skipped === 1 ? "" : "s"} skipped`);
+    setToast(parts.join(" · "));
   };
   const clearData = () => { setData(emptyData()); setTab("timeline"); setToast("All data cleared"); };
 
@@ -84,6 +92,8 @@ export default function MoneyApp({ user, onSignOut }) {
   const addGoal = (g) => setData((d) => ({ ...d, goals: [...(d.goals || []), { ...g, id: uid() }] }));
   const delGoal = (id) => setData((d) => ({ ...d, goals: (d.goals || []).filter((g) => g.id !== id) }));
 
+  if (adminOpen) return <RateAdmin onClose={() => setAdminOpen(false)} />;
+
   return (
     <div className="m-app">
       <div className="m-screen">
@@ -91,7 +101,7 @@ export default function MoneyApp({ user, onSignOut }) {
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
-        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} />}
+        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} />}
       </div>
 
       {tab === "timeline" && (
@@ -112,7 +122,7 @@ export default function MoneyApp({ user, onSignOut }) {
       {adding && <AddTxn wallets={wallets} initial={editing} onClose={() => { setAdding(false); setEditing(null); }} onSave={saveTxn} />}
       {addAcct && <AddAccount onClose={() => setAddAcct(false)} onAddWallet={(w) => { addWallet(w); setAddAcct(false); }} onAddLoan={(l) => { addLoan(l); setAddAcct(false); }} />}
       {importing && <ImportSms wallets={wallets} existing={txns} onClose={() => setImporting(false)} onImport={importTxns} />}
-      {uploading && <StatementImport wallets={wallets} existing={txns} onClose={() => setUploading(false)} onImport={importTxns} />}
+      {uploading && <StatementImport wallets={wallets} loans={loans} existing={txns} onClose={() => setUploading(false)} onImport={importStatement} />}
     </div>
   );
 }
@@ -271,7 +281,7 @@ function Budgets({ data, addBudget, delBudget }) {
   );
 }
 
-function More({ data, user, onSignOut, onClear }) {
+function More({ data, user, onSignOut, onClear, onAdmin }) {
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -291,6 +301,7 @@ function More({ data, user, onSignOut, onClear }) {
       </div>
       <div className="m-menu">
         <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON (backup)</i></span><ChevronRight size={18} /></button>
+        <button onClick={onAdmin}><span className="mm-ic" style={{ color: "#0ea372" }}><Landmark size={20} /></span><span className="mm-txt"><b>Rate sources (admin)</b><i>Manage bank rate links shown in the marketplace</i></span><ChevronRight size={18} /></button>
         <button onClick={clear}><span className="mm-ic" style={{ color: "#fa5a7d", background: "#fef0f3" }}><Trash2 size={20} /></span><span className="mm-txt"><b>Clear all data</b><i>Erase everything and start fresh</i></span><ChevronRight size={18} /></button>
         <button onClick={onSignOut}><span className="mm-ic" style={{ color: "#fa5a7d" }}><LogOut size={20} /></span><span className="mm-txt"><b>Sign out</b></span><ChevronRight size={18} /></button>
       </div>
