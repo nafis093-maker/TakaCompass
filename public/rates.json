@@ -1,5 +1,5 @@
 {
-  "lastSynced": "2026-06-19",
+  "lastSynced": "2026-06-20",
   "inflation": 9.4,
   "sanchayapatra": 11.83,
   "dps": 10,
@@ -8,7 +8,7 @@
   "carLoan": 13.5,
   "policy": 10,
   "taxFree": 375000,
-  "lendingRefWB": null,
+  "lendingRefWB": 9.85,
   "_about": "Reference rates for Taka Compass. The app fetches this file on load. It is refreshed daily by .github/workflows/sync-rates.yml, which runs scripts/sync-rates.mjs.",
   "_sources": {
     "inflation": "BBS monthly CPI release",
