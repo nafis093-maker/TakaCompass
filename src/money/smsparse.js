@@ -19,12 +19,16 @@ function provider(low) {
 }
 
 export function guessCategory(low, who, type) {
+  const w = (who || "") + " " + low;
   if (type === "income") {
-    if (/salary|payroll|wage/.test(low)) return "salary";
-    if (/refund|cashback/.test(low)) return "other_in";
+    if (/salary|payroll|wage/.test(w)) return "salary";
+    if (/int\.?\s?pd|interest/.test(w)) return "investment";
+    if (/dividend|profit/.test(w)) return "investment";
+    if (/refund|cashback|reversal/.test(w)) return "other_in";
     return "other_in";
   }
-  const w = (who || "") + " " + low;
+  if (/wtax|\bvat\b|excise|\bduty\b|ac mnt|mnt fee|maintenance|yrly ac|service charge|\bcharge\b|scheme fee|stamp/.test(w)) return "bills";
+  if (/card pymt|card payment|\bpos\b|visa|mastercard/.test(w)) return "shopping";
   if (/restaurant|food|cafe|kfc|pizza|burger|foodpanda|hungrynaki|dine/.test(w)) return "food";
   if (/grocery|super ?shop|agora|meena|shwapno|unimart|daily/.test(w)) return "groceries";
   if (/fuel|petrol|octane|cng|filling/.test(w)) return "transport";

@@ -51,8 +51,17 @@ export default function MoneyApp({ user, onSignOut }) {
 
   const { wallets, txns, budgets, loans = [], goals = [] } = data;
 
-  const importTxns = (list, skipped = 0) => {
-    if (list && list.length) setData((d) => ({ ...d, txns: [...d.txns, ...list] }));
+  const importTxns = (list, skipped = 0, openings = []) => {
+    setData((d) => {
+      let wallets = d.wallets;
+      if (openings && openings.length) {
+        wallets = d.wallets.map((w) => {
+          const o = openings.find((x) => x.walletId === w.id);
+          return o ? { ...w, opening: o.opening } : w;
+        });
+      }
+      return { ...d, wallets, txns: list && list.length ? [...d.txns, ...list] : d.txns };
+    });
     setImporting(false); setUploading(false);
     const n = list ? list.length : 0;
     const parts = [`Imported ${n} transaction${n === 1 ? "" : "s"}`];

@@ -8,12 +8,13 @@ export default function StatementImport({ wallets, onClose, onImport, existing =
   const bankDefault = (wallets.find((w) => w.kind === "bank") || wallets[0])?.id;
   const [files, setFiles] = useState([]); // {id, file, name, walletId, password, error}
   const [rows, setRows] = useState([]);   // parsed, editable
+  const [openings, setOpenings] = useState([]); // {fileId, walletId, bank, opening, set}
   const [busy, setBusy] = useState("");
 
   const addFiles = (list) => {
     const next = Array.from(list).map((file) => ({ id: uid(), file, name: file.name, walletId: bankDefault, password: "", error: "" }));
     setFiles((f) => [...f, ...next]);
-    setRows([]);
+    setRows([]); setOpenings([]);
   };
   const updFile = (id, k, v) => setFiles((fs) => fs.map((f) => (f.id === id ? { ...f, [k]: v } : f)));
   const rmFile = (id) => setFiles((fs) => fs.filter((f) => f.id !== id));
@@ -21,14 +22,16 @@ export default function StatementImport({ wallets, onClose, onImport, existing =
   const parseAll = async () => {
     setRows([]);
     const out = [];
+    const opens = [];
     for (const f of files) {
       setBusy(`Reading ${f.name}…`);
       try {
-        const { txns, textFound } = await parsePdf(f.file, f.password || undefined);
+        const { txns, textFound, opening } = await parsePdf(f.file, f.password || undefined);
         if (!textFound) { updFile(f.id, "error", "No text found — looks like a scanned image (OCR not supported)."); continue; }
         updFile(f.id, "error", "");
         const bank = wallets.find((w) => w.id === f.walletId)?.name || "Bank";
         txns.forEach((t) => out.push({ ...t, id: uid(), walletId: f.walletId, bank, include: true }));
+        if (opening != null) opens.push({ fileId: f.id, walletId: f.walletId, bank, opening: Math.round(opening), set: true });
       } catch (e) {
         const msg = String(e?.message || e);
         updFile(f.id, "error", /password/i.test(msg) ? "Password required or incorrect." : "Couldn't read this PDF.");
@@ -38,17 +41,20 @@ export default function StatementImport({ wallets, onClose, onImport, existing =
     const seen = new Set(existingFps);
     out.forEach((r) => {
       r.dupe = seen.has(txnFingerprint(r));
-      r.include = !r.dupe;
+      r.include = !r.dupe && !r.transfer;
       if (!r.dupe) seen.add(txnFingerprint(r));
     });
+    setOpenings(opens);
     setRows(out);
   };
 
   const upd = (id, k, v) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, [k]: v } : r)));
+  const togOpen = (fileId) => setOpenings((os) => os.map((o) => (o.fileId === fileId ? { ...o, set: !o.set } : o)));
   const importAll = () => {
     const chosen = rows.filter((r) => r.include && r.amount > 0);
     const skipped = rows.filter((r) => r.dupe && !r.include).length;
-    onImport(chosen.map((r) => ({ id: uid(), type: r.type, amount: +r.amount, category: r.category, walletId: r.walletId, date: r.date, note: r.note, ref: r.ref })), skipped);
+    const setOpenings2 = openings.filter((o) => o.set).map((o) => ({ walletId: o.walletId, opening: o.opening }));
+    onImport(chosen.map((r) => ({ id: uid(), type: r.type, amount: +r.amount, category: r.category, walletId: r.walletId, date: r.date, note: r.note, ref: r.ref })), skipped, setOpenings2);
   };
   const count = rows.filter((r) => r.include).length;
   const dupes = rows.filter((r) => r.dupe).length;
@@ -89,6 +95,17 @@ export default function StatementImport({ wallets, onClose, onImport, existing =
 
           {files.length > 0 && <button className="sms-auto" onClick={parseAll} disabled={!!busy}>{busy || `Read ${files.length} statement${files.length > 1 ? "s" : ""}`}</button>}
 
+          {openings.length > 0 && (
+            <div className="stmt-openings">
+              <div className="stmt-ophd">Set account starting balances so balances match your statement</div>
+              {openings.map((o) => (
+                <label key={o.fileId} className="stmt-oprow">
+                  <input type="checkbox" checked={o.set} onChange={() => togOpen(o.fileId)} />
+                  <span><b>{o.bank}</b> opening balance ৳{o.opening.toLocaleString()}</span>
+                </label>
+              ))}
+            </div>
+          )}
           {rows.length > 0 && <div className="sms-found">{rows.length} transactions detected{dupes ? ` · ${dupes} already imported` : ""}</div>}
           <div className="sms-list">
             {rows.map((r) => {
@@ -101,6 +118,7 @@ export default function StatementImport({ wallets, onClose, onImport, existing =
                       <span className={"sms-type " + r.type}>{r.type}</span>
                       <span className="sms-amt"><i>৳</i><input inputMode="numeric" value={r.amount} onChange={(e) => upd(r.id, "amount", parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
                       {r.dupe && <span className="sms-dupe">duplicate</span>}
+                      {r.transfer && <span className="sms-xfer">transfer?</span>}
                       <span className="stmt-bank">{r.bank}</span>
                     </div>
                     <div className="sms-line2">

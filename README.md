@@ -29,10 +29,13 @@ double entry:
   (the live loan/deposit marketplace).
 - **Importing** — three fast ways in, all reviewed before saving:
   - **Bank statement upload (PDF):** upload one or more statements from different
-    banks; the app extracts transactions client-side (pdf.js), figures out
-    income/expense from the running balance, guesses categories, and lets you
-    assign each statement to a wallet. Password-protected PDFs supported; scanned
-    image PDFs are not.
+    banks; the app extracts transactions client-side (pdf.js) by reading the actual
+    Withdrawal/Deposit/Balance columns (so income vs expense is exact, not guessed),
+    categorises bank lines (interest, charges/VAT/excise, card, etc.), flags likely
+    internal transfers, dedups against what's already imported, and can set each
+    account's opening balance so balances match the statement. Verified against real
+    BRAC Bank & Standard Chartered statements (parsed totals match the bank's own
+    totals). Password-protected PDFs supported; scanned image PDFs are not.
   - **SMS paste/import:** paste bKash/Nagad/Rocket/bank SMS (or auto-read on the
     native Android build — see NATIVE_ANDROID.md).
 - **More** — profile, export JSON, sign out.
