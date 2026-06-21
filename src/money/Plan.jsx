@@ -107,6 +107,7 @@ function Health({ d }) {
             <span className="pc-tag">{c.tagText}</span>
             <b>{c.title}</b>
             <p>{c.body}</p>
+            {c.action && <p className="pc-fix"><span>Suggestion</span>{c.action}</p>}
           </div>
         ))}
       </div>

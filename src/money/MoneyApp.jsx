@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
-  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark,
+  Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark, Upload,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
@@ -109,6 +109,9 @@ export default function MoneyApp({ user, onSignOut }) {
       {tab === "timeline" && (
         <button className="m-fab" onClick={() => { setEditing(null); setAdding(true); }} aria-label="Add transaction"><Plus size={26} strokeWidth={2.6} /></button>
       )}
+      <button className={"m-fab2" + (tab === "timeline" ? " stacked" : "")} onClick={() => setUploading(true)} aria-label="Upload bank statement" title="Upload statement">
+        <Upload size={20} strokeWidth={2.4} />
+      </button>
 
       {toast && <div className="m-toast">{toast}</div>}
 
@@ -162,6 +165,7 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload }) {
           <span className="mh-tag">{hero.tagText}{PRIORITY ? " · top priority" : ""}</span>
           <b>{hero.title}</b>
           <p>{hero.body}</p>
+          {hero.action && <p className="mh-fix">{hero.action}</p>}
           <span className="mh-go">Open plan <ChevronRight size={14} /></span>
         </button>
       )}
@@ -195,6 +199,7 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload }) {
               <span className="pc-tag">{c.tagText}</span>
               <b>{c.title}</b>
               <p>{c.body}</p>
+              {c.action && <p className="pc-fix"><span>Suggestion</span>{c.action}</p>}
             </div>
           ))}
           <button className="m-overview" style={{ alignSelf: "center" }} onClick={goPlan}><Sparkles size={16} /> Goals, tax &amp; projections <ChevronRight size={16} /></button>

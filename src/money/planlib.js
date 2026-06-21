@@ -61,46 +61,59 @@ const TAG = { alert: "ACT NOW", warn: "HEADS UP", opp: "OPPORTUNITY", ok: "NICE"
 
 export function buildInsights(d, taxInvest) {
   const out = [];
-  const card = (level, title, body) => out.push({ level, title, body, tagText: TAG[level] });
+  const card = (level, title, body, action) => out.push({ level, title, body, action, tagText: TAG[level] });
   const idleCash = Math.max(0, d.liquid - d.essentialMonthly * 6);
 
   if (d.monthlyIncome > 0 && d.surplus < 0)
-    card("alert", "You're spending more than you earn", `This month you're ${tk(-d.surplus)} in the red. Trim the biggest flexible categories or lift income before anything else.`);
+    card("alert", "You're spending more than you earn", `This month you're ${tk(-d.surplus)} in the red.`,
+      "Cut your two biggest flexible categories this week, or pause non-essentials until payday.");
 
   if (d.essentialMonthly > 0 && d.emMonths < 3)
-    card("alert", "Emergency fund is thin", `Liquid savings cover only ${d.emMonths.toFixed(1)} months of essentials. Build toward 6 months (${big(d.essentialMonthly * 6)}) in cash/FDR first.`);
+    card("alert", "Emergency fund is thin", `Liquid savings cover only ${d.emMonths.toFixed(1)} months of essentials.`,
+      `Park ${big(d.essentialMonthly * 6)} in cash/FDR before investing anywhere else.`);
   else if (d.essentialMonthly > 0 && d.emMonths < 6)
-    card("warn", "Top up the emergency fund", `You're at ${d.emMonths.toFixed(1)} months of cover. ${big(d.essentialMonthly * 6 - d.liquid)} more reaches the 6-month floor.`);
+    card("warn", "Top up the emergency fund", `You're at ${d.emMonths.toFixed(1)} months of cover.`,
+      `Auto-save ~${big((d.essentialMonthly * 6 - d.liquid) / 3)}/mo for 3 months to reach the 6-month floor.`);
 
   const pricey = d.loans.filter((l) => l.rate >= 12).sort((a, b) => b.rate - a.rate)[0];
   if (pricey && idleCash > 0)
-    card("opp", "Prepay debt with idle cash", `Your ${pricey.name} costs ${pricey.rate}%. You hold ${big(idleCash)} above your buffer earning less — prepaying is a guaranteed ${pricey.rate}% return.`);
+    card("opp", "Prepay debt with idle cash", `Your ${pricey.name} costs ${pricey.rate}% — more than idle cash earns.`,
+      `Put ${big(Math.min(idleCash, pricey.bal))} toward ${pricey.name} principal — a guaranteed ${pricey.rate}% return.`);
 
   if (idleCash > 50000)
-    card("warn", "Idle cash is shrinking", `${big(idleCash)} sits beyond your emergency buffer. At ${RATES.inflation}% inflation that loses ~${tk(idleCash * (RATES.inflation - 1) / 100)} of value this year — move it to Sanchayapatra (~${RATES.sanchayapatra}%).`);
+    card("warn", "Idle cash is shrinking", `${big(idleCash)} sits beyond your emergency buffer. At ${RATES.inflation}% inflation that loses ~${tk(idleCash * (RATES.inflation - 1) / 100)} of value this year.`,
+      `Move ${big(idleCash)} into a 5-year Sanchayapatra (~${RATES.sanchayapatra}%) or a 1-year FDR this month.`);
 
   const rr = realReturn(d.blendedReturn);
   if (d.totalAssets > 0 && rr < 0)
-    card("warn", "Wealth is losing to inflation", `Your blended ${d.blendedReturn.toFixed(1)}% return trails ${RATES.inflation}% inflation. Tilt toward Sanchayapatra and a measured DSE/gold mix to get ahead.`);
+    card("warn", "Wealth is losing to inflation", `Your blended ${d.blendedReturn.toFixed(1)}% return trails ${RATES.inflation}% inflation.`,
+      "Shift part of your low-yield cash into Sanchayapatra and a small, measured gold/DSE mix.");
   else if (d.totalAssets > 0 && rr >= 2)
-    card("ok", "Beating inflation", `Your ${d.blendedReturn.toFixed(1)}% blended return clears inflation by ${rr.toFixed(1)} points — wealth is genuinely growing.`);
+    card("ok", "Beating inflation", `Your ${d.blendedReturn.toFixed(1)}% blended return clears inflation by ${rr.toFixed(1)} points.`,
+      "Keep the allocation and review it once or twice a year.");
 
   const top = d.allocation[0];
   if (top && top.pct > 60)
-    card("warn", `Heavy in ${top.k.toLowerCase()}`, `${Math.round(top.pct)}% of assets sit in one bucket. Spread across fixed-income, equity and gold so one bad year can't sink you.`);
+    card("warn", `Heavy in ${top.k.toLowerCase()}`, `${Math.round(top.pct)}% of assets sit in one bucket, so one bad year hits hard.`,
+      "Direct new savings into other buckets until no single one is above ~50%.");
 
   if (d.dti > 40)
-    card("alert", "Over-leveraged", `EMIs eat ${Math.round(d.dti)}% of income (40% is the ceiling). Avoid new loans until this eases.`);
+    card("alert", "Over-leveraged", `EMIs eat ${Math.round(d.dti)}% of income — past the 40% ceiling.`,
+      "Avoid new loans; consider refinancing or prepaying the highest-rate one.");
 
   const room = Math.min(0.2 * d.monthlyIncome * 12, 1000000) - taxInvest;
   if (d.surplus > 0 && room > 20000)
-    card("opp", "Unused tax-rebate room", `Routing ~${big(room)} more into Sanchayapatra/DPS earns ~${RATES.sanchayapatra}% and trims ~${tk(0.15 * room)} off your tax bill.`);
+    card("opp", "Unused tax-rebate room", `You can still claim a rebate on ~${big(room)} of eligible investment.`,
+      `Invest ${big(room)} in Sanchayapatra/DPS before June 30 to trim ~${tk(0.15 * room)} off your tax.`);
 
   if (d.monthlyIncome > 0 && d.surplus >= 0 && d.savingsRate >= 25)
-    card("ok", "Strong savings rate", `You're saving ${Math.round(d.savingsRate)}% of income — great firepower for your goals.`);
+    card("ok", "Strong savings rate", `You're saving ${Math.round(d.savingsRate)}% of income — great firepower.`,
+      "Point that surplus at a named goal — a flat, retirement, or a Sanchayapatra ladder.");
   else if (d.monthlyIncome > 0 && d.surplus >= 0 && d.savingsRate < 20)
-    card("warn", "Low savings rate", `Saving ${Math.round(d.savingsRate)}% of income. Aim for 25–30% to hit your goals faster.`);
+    card("warn", "Low savings rate", `You're saving ${Math.round(d.savingsRate)}% of income.`,
+      "Set a 25% auto-transfer on payday so savings leave before you can spend them.");
 
-  if (out.length === 0) card("ok", "Looking steady", "Add a few transactions and your personalised insights will sharpen up.");
+  if (out.length === 0) card("ok", "Looking steady", "Not enough data yet for tailored insights.",
+    "Import a bank statement or add a few transactions to unlock suggestions.");
   return out.sort((a, b) => LV[a.level] - LV[b.level]);
 }

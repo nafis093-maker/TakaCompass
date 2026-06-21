@@ -364,3 +364,17 @@
 .m-hero.ok { background: linear-gradient(135deg, #e9f5fa, #f4fbfd); border-color: #cfeaf3; }
 .m-hero.ok .mh-tag, .m-hero.ok .mh-go { color: #0891b2; }
 .home-seg { margin-bottom: 14px; }
+
+/* suggestion line inside insight cards */
+.pc-fix, .mh-fix { margin: 8px 0 0; font-size: 12px; line-height: 1.45; font-weight: 600; color: var(--tx); }
+.pc-fix span { display: inline-block; font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--acc); background: #eefaf4; border-radius: 5px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+.m-hero .mh-fix { font-weight: 700; color: var(--tx); opacity: .92; }
+
+/* persistent statement-upload FAB (visible on every tab) */
+.m-fab2 { position: fixed; bottom: 92px; right: max(16px, calc(50% - 204px)); z-index: 29;
+  width: 50px; height: 50px; border-radius: 50%; cursor: pointer;
+  background: #fff; border: 1px solid var(--line); color: var(--acc);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 10px 24px -10px rgba(15,38,28,.45); transition: transform .12s ease; }
+.m-fab2.stacked { bottom: 162px; }
+.m-fab2:active { transform: scale(.92); }
