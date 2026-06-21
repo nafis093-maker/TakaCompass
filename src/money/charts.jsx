@@ -61,8 +61,8 @@ export function Donut({ slices, centerLabel }) {
   const total = visible.reduce((s, x) => s + x.amount, 0) || 1;
   if (visible.length === 1) {
     return (
-      <svg viewBox="0 0 160 160" className="m-donut">
-        <circle cx={C} cy={C} r={(R + r) / 2} fill="none" stroke={visible[0].color} strokeWidth={R - r} />
+      <svg viewBox="0 0 160 160" className="m-donut anim">
+        <circle cx={C} cy={C} r={(R + r) / 2} fill="none" stroke={visible[0].color} strokeWidth={R - r} className="m-arc" />
         {centerLabel && <text x="80" y="85" className="m-dlabel" textAnchor="middle">{centerLabel}</text>}
       </svg>
     );
@@ -79,8 +79,8 @@ export function Donut({ slices, centerLabel }) {
     return { d: `M${x0},${y0} A${R},${R} 0 ${large} 1 ${x1},${y1} L${x2},${y2} A${r},${r} 0 ${large} 0 ${x3},${y3} Z`, color: s.color, key: s.key };
   });
   return (
-    <svg viewBox="0 0 160 160" className="m-donut">
-      {arcs.map((arc) => <path key={arc.key} d={arc.d} fill={arc.color} />)}
+    <svg viewBox="0 0 160 160" className="m-donut anim">
+      {arcs.map((arc, i) => <path key={arc.key} className="m-arc" style={{ animationDelay: i * 70 + "ms" }} d={arc.d} fill={arc.color} />)}
       {centerLabel && <text x="80" y="85" className="m-dlabel" textAnchor="middle">{centerLabel}</text>}
     </svg>
   );

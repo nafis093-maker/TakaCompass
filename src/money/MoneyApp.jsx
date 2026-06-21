@@ -16,7 +16,9 @@ import StatementImport from "./StatementImport.jsx";
 import RateAdmin from "./RateAdmin.jsx";
 import Recurring from "./Recurring.jsx";
 import Zakat from "./Zakat.jsx";
+import Wrapped from "./Wrapped.jsx";
 import Plan from "./Plan.jsx";
+import { CountUp } from "./anim.jsx";
 import { derive } from "./derive.js";
 import { buildInsights } from "./planlib.js";
 import { materializeDue, nextAfter, upcoming, makeRule } from "./recurring.js";
@@ -43,6 +45,7 @@ export default function MoneyApp({ user, onSignOut }) {
   const [adminOpen, setAdminOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [zakatOpen, setZakatOpen] = useState(false);
+  const [wrappedOpen, setWrappedOpen] = useState(false);
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(""), 3500); return () => clearTimeout(id); }, [toast]);
@@ -60,6 +63,16 @@ export default function MoneyApp({ user, onSignOut }) {
   }, []);
 
   const { wallets, txns, budgets, loans = [], goals = [], recurring = [] } = data;
+
+  // Most-used (category, amount) combos for one-tap entry.
+  const quickSuggest = useMemo(() => {
+    const map = {};
+    txns.filter((t) => t.type === "expense").forEach((t) => {
+      const k = t.category + "|" + Math.round(t.amount);
+      (map[k] = map[k] || { category: t.category, amount: Math.round(t.amount), n: 0 }).n++;
+    });
+    return Object.values(map).sort((a, b) => b.n - a.n).slice(0, 5);
+  }, [txns]);
 
   // Catch up any due recurring transactions when the app opens.
   useEffect(() => {
@@ -147,11 +160,11 @@ export default function MoneyApp({ user, onSignOut }) {
   return (
     <div className="m-app">
       <div className="m-screen">
-        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} />}
+        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} openWrapped={() => setWrappedOpen(true)} />}
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
-        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} onRecurring={() => setRecurringOpen(true)} onZakat={() => setZakatOpen(true)} onRestore={restoreData} onSample={loadSample} />}
+        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} onRecurring={() => setRecurringOpen(true)} onZakat={() => setZakatOpen(true)} onRestore={restoreData} onSample={loadSample} onWrapped={() => setWrappedOpen(true)} />}
       </div>
 
       {tab === "timeline" && (
@@ -172,15 +185,16 @@ export default function MoneyApp({ user, onSignOut }) {
         ))}
       </nav>
 
-      {adding && <AddTxn wallets={wallets} initial={editing} onClose={() => { setAdding(false); setEditing(null); }} onSave={saveTxn} />}
+      {adding && <AddTxn wallets={wallets} initial={editing} quick={quickSuggest} onClose={() => { setAdding(false); setEditing(null); }} onSave={saveTxn} />}
       {addAcct && <AddAccount onClose={() => setAddAcct(false)} onAddWallet={(w) => { addWallet(w); setAddAcct(false); }} onAddLoan={(l) => { addLoan(l); setAddAcct(false); }} />}
       {importing && <ImportSms wallets={wallets} existing={txns} onClose={() => setImporting(false)} onImport={importTxns} />}
       {uploading && <StatementImport wallets={wallets} loans={loans} existing={txns} onClose={() => setUploading(false)} onImport={importStatement} />}
+      {wrappedOpen && <Wrapped data={data} onClose={() => setWrappedOpen(false)} />}
     </div>
   );
 }
 
-function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring }) {
+function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring, openWrapped }) {
   const { txns, wallets, recurring = [] } = data;
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
@@ -226,8 +240,9 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
   return (
     <div className="scr">
       <div className="m-head">
-        <div className="m-bignum">{tk(totalWealth(wallets, txns))}</div>
+        <div className="m-bignum"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
         <div className="m-sublabel">Total wealth · {tk(spent)} spent in {monthLabel(mk)}</div>
+        {spent > 0 && <button className="wr-pill" onClick={openWrapped}>✨ See your {monthLabel(mk)} Wrapped</button>}
       </div>
 
       {hero && (
@@ -337,7 +352,7 @@ function Wallets({ data, onAdd, delWallet, delLoan }) {
   const series = useMemo(() => wealthSeries(wallets, txns, 6), [wallets, txns]);
   return (
     <div className="scr">
-      <div className="m-head"><div className="m-bignum">{tk(net)}</div><div className="m-sublabel">Net worth · {tk(assets)} assets − {tk(owed)} loans</div></div>
+      <div className="m-head"><div className="m-bignum"><CountUp value={net} format={tk} /></div><div className="m-sublabel">Net worth · {tk(assets)} assets − {tk(owed)} loans</div></div>
       <WealthLine data={series} />
       <div className="plan-sec">Accounts</div>
       <div className="m-list">
@@ -418,7 +433,7 @@ function Budgets({ data, addBudget, delBudget }) {
   );
 }
 
-function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, onRestore, onSample }) {
+function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, onRestore, onSample, onWrapped }) {
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -443,6 +458,7 @@ function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, o
         <div><div className="m-pname">{user.name}</div><div className="m-pmail">{user.email}</div></div>
       </div>
       <div className="m-menu">
+        <button onClick={onWrapped}><span className="mm-ic" style={{ color: "#fff", background: "linear-gradient(135deg,#8b5cf6,#0ea372)" }}><Sparkles size={20} /></span><span className="mm-txt"><b>Taka Wrapped</b><i>Your month in money — animated &amp; shareable</i></span><ChevronRight size={18} /></button>
         <button onClick={onRecurring}><span className="mm-ic" style={{ color: "#f59f0a", background: "#fff5e0" }}><CalendarClock size={20} /></span><span className="mm-txt"><b>Recurring &amp; bills</b><i>Salary, rent, EMIs — auto-post and remind</i></span><ChevronRight size={18} /></button>
         <button onClick={onZakat}><span className="mm-ic" style={{ color: "#10b981", background: "#eefaf4" }}><Moon size={20} /></span><span className="mm-txt"><b>Zakat calculator</b><i>2.5% of zakatable wealth above nisab</i></span><ChevronRight size={18} /></button>
         <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON (backup)</i></span><ChevronRight size={18} /></button>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X, Check, Repeat, Paperclip } from "lucide-react";
 import { EXPENSE_CATS, INCOME_CATS, uid, today, niceDate } from "./lib.js";
 
-export default function AddTxn({ wallets, onClose, onSave, initial }) {
+export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }) {
   const [type, setType] = useState(initial?.type || "expense");
   const [amount, setAmount] = useState(initial?.amount || 0);
   const [category, setCategory] = useState(initial?.category || "food");
@@ -58,6 +58,29 @@ export default function AddTxn({ wallets, onClose, onSave, initial }) {
           <input autoFocus inputMode="numeric" value={amount || ""} placeholder="0"
             onChange={(e) => setAmount(parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} />
         </div>
+
+        {!initial && (
+          <div className="qa-amts">
+            {[100, 200, 500, 1000, 2000].map((a) => (
+              <button key={a} className="qa-amt" onClick={() => setAmount(a)}>৳{a >= 1000 ? a / 1000 + "k" : a}</button>
+            ))}
+          </div>
+        )}
+
+        {!initial && quick.length > 0 && type !== "transfer" && (
+          <div className="qa-chips">
+            {quick.map((s, i) => {
+              const c = (INCOME_CATS.find((x) => x.key === s.category) || EXPENSE_CATS.find((x) => x.key === s.category));
+              if (!c) return null;
+              return (
+                <button key={i} className="qa-chip" onClick={() => { setType(s.type || "expense"); setCategory(s.category); setAmount(s.amount); }}>
+                  <span className="qac-ic" style={{ background: c.color + "22", color: c.color }}><c.Icon size={15} strokeWidth={2.4} /></span>
+                  {c.label} · ৳{s.amount >= 1000 ? (s.amount / 1000).toFixed(s.amount % 1000 ? 1 : 0) + "k" : s.amount}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="sheet-types">
           {["expense", "income", "transfer"].map((t) => (

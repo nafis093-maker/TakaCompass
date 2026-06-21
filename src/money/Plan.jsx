@@ -7,6 +7,7 @@ import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import { derive } from "./derive.js";
 import { RATES, taxBD, realReturn, projectSeries, goalEval, buildInsights, emi } from "./planlib.js";
 import { addMonths } from "./recurring.js";
+import { burst } from "./confetti.js";
 import { loadSources, adminToCatalog } from "./rateadmin.js";
 import Marketplace from "../components/Marketplace.jsx";
 
@@ -135,7 +136,9 @@ function Goals({ d, addGoal, delGoal }) {
   const [g, setG] = useState({ name: "", cost: 0, dp: 20, rate: 13, tenure: 10, years: 3, monthly: 0 });
   const create = () => {
     if (!g.name.trim() || g.cost <= 0) return;
+    const e = goalEval({ ...g }, d.surplus, d.monthlyIncome, d.totalEMI);
     addGoal({ ...g, name: g.name.trim() });
+    if ((g.monthly || 0) >= e.reqSave && e.reqSave > 0) burst();
     setG({ name: "", cost: 0, dp: 20, rate: 13, tenure: 10, years: 3, monthly: 0 });
     setOpen(false);
   };
