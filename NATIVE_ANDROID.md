@@ -60,3 +60,12 @@ install the generated `app-debug.apk` (enable "install from unknown sources").
 - `android/app/src/main/AndroidManifest.xml` — `READ_SMS` / `RECEIVE_SMS`
 - `src/money/native.js` — JS bridge
 - `src/money/smsparse.js` — the shared SMS → transaction parser
+
+## Bill / EMI reminders (local notifications)
+
+Recurring items (More → Recurring & bills) schedule on-device reminders via
+`@capacitor/local-notifications`. This is already a dependency and registered by
+`cap sync`. The manifest declares `POST_NOTIFICATIONS` (Android 13+ asks at
+runtime) and `SCHEDULE_EXACT_ALARM`. On web these calls are no-ops. Reminders
+re-sync whenever your recurring list changes; they fire at 9:00 AM on the due
+date. Rebuild the APK in Android Studio after pulling these changes.

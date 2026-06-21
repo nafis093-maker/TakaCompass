@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, Check } from "lucide-react";
-import { WALLET_KINDS, kindOf, uid } from "./lib.js";
+import { WALLET_KINDS, kindOf, uid, today } from "./lib.js";
 
 export default function AddAccount({ onClose, onAddWallet, onAddLoan }) {
   const [mode, setMode] = useState("asset");
@@ -9,12 +9,20 @@ export default function AddAccount({ onClose, onAddWallet, onAddLoan }) {
   const [opening, setOpening] = useState(0);
   const [rate, setRate] = useState(13.5);
   const [emiv, setEmiv] = useState(0);
+  const [start, setStart] = useState("");
+  const [tenure, setTenure] = useState("");
+  const [trate, setTrate] = useState("");
 
+  const TERM = new Set(["fdr", "sanchayapatra", "dps"]);
+  const isTerm = mode === "asset" && TERM.has(kind);
   const canSave = name.trim().length > 0;
   const save = () => {
     if (!canSave) return;
-    if (mode === "asset") onAddWallet({ id: uid(), name: name.trim(), kind, opening: +opening || 0, color: kindOf(kind).color });
-    else onAddLoan({ id: uid(), name: name.trim(), bal: +opening || 0, rate: +rate || 0, emi: +emiv || 0 });
+    if (mode === "asset") {
+      const w = { id: uid(), name: name.trim(), kind, opening: +opening || 0, color: kindOf(kind).color };
+      if (isTerm && start && tenure) { w.start = start; w.tenureMonths = +tenure; w.rate = +trate || kindOf(kind).ret; }
+      onAddWallet(w);
+    } else onAddLoan({ id: uid(), name: name.trim(), bal: +opening || 0, rate: +rate || 0, emi: +emiv || 0 });
   };
 
   return (
@@ -45,6 +53,15 @@ export default function AddAccount({ onClose, onAddWallet, onAddLoan }) {
           <label className="sheet-row">{mode === "asset" ? "Current balance" : "Amount owed"}
             <span className="m-money sm"><i>৳</i><input inputMode="numeric" value={opening || ""} onChange={(e) => setOpening(parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
           </label>
+
+          {isTerm && (
+            <>
+              <label className="sheet-row">Started on<input type="date" value={start} max={today()} onChange={(e) => setStart(e.target.value)} /></label>
+              <label className="sheet-row">Term (months)<span className="m-money sm"><input inputMode="numeric" placeholder="e.g. 60" value={tenure} onChange={(e) => setTenure(e.target.value.replace(/[^0-9]/g, ""))} /></span></label>
+              <label className="sheet-row">Profit %<span className="onb-pct sm"><input placeholder={String(kindOf(kind).ret)} value={trate} onChange={(e) => setTrate(e.target.value.replace(/[^0-9.]/g, ""))} />%</span></label>
+              <p className="m-note" style={{ margin: "2px 0 0" }}>Optional — adds this to your maturity tracker with a projected value.</p>
+            </>
+          )}
 
           {mode === "loan" && (
             <>

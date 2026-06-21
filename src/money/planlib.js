@@ -113,6 +113,19 @@ export function buildInsights(d, taxInvest) {
     card("warn", "Low savings rate", `You're saving ${Math.round(d.savingsRate)}% of income.`,
       "Set a 25% auto-transfer on payday so savings leave before you can spend them.");
 
+  (d.budgetAlerts || []).slice(0, 2).forEach((b) => {
+    if (b.pct >= 100)
+      card("warn", `${b.name} budget is blown`, `You're at ${Math.round(b.pct)}% of your ${big(b.amount)} ${b.name.toLowerCase()} budget this month.`,
+        "Ease off this category for the rest of the month, or raise the budget if it's no longer realistic.");
+    else
+      card("warn", `${b.name} budget almost gone`, `${Math.round(b.pct)}% of your ${big(b.amount)} ${b.name.toLowerCase()} budget is used.`,
+        `Only ${big(b.amount - b.spent)} left — pace the rest of the month carefully.`);
+  });
+
+  if (d.loggingStreak >= 3)
+    card("ok", `${d.loggingStreak}-day logging streak`, "You've recorded something every day lately — that consistency is what makes the numbers trustworthy.",
+      "Keep it up; the longer the history, the sharper these suggestions get.");
+
   if (out.length === 0) card("ok", "Looking steady", "Not enough data yet for tailored insights.",
     "Import a bank statement or add a few transactions to unlock suggestions.");
   return out.sort((a, b) => LV[a.level] - LV[b.level]);

@@ -90,6 +90,7 @@ export function loadMoney(email) {
       d.budgets = d.budgets || [];
       d.loans = d.loans || [];
       d.goals = d.goals || [];
+      d.recurring = d.recurring || [];
       d.wallets.forEach((w) => (w.kind = w.kind || "cash"));
       return d;
     }
@@ -101,7 +102,7 @@ export function saveMoney(email, data) {
 }
 export function emptyData() {
   const w = { id: uid(), name: "Cash Wallet", kind: "cash", opening: 0, color: "#0ea372" };
-  return { wallets: [w], txns: [], budgets: [], loans: [], goals: [] };
+  return { wallets: [w], txns: [], budgets: [], loans: [], goals: [], recurring: [] };
 }
 // identity for dedup: a real transaction ref if we have one, else a fingerprint
 export const txnFingerprint = (t) =>
@@ -119,7 +120,11 @@ export function sampleData() {
     ],
     budgets: [{ id: uid(), name: "Shopping", amount: 60000, category: "shopping" }],
     loans: [{ id: uid(), name: "Car loan", bal: 600000, rate: 13.5, emi: 18000 }],
-    goals: [{ id: uid(), name: "Flat", cost: 8000000, dp: 25, rate: 13, tenure: 20, years: 5 }],
+    goals: [{ id: uid(), name: "Flat", cost: 8000000, dp: 25, rate: 13, tenure: 20, years: 5, monthly: 25000 }],
+    recurring: [
+      { id: uid(), type: "income", amount: 197000, category: "salary", walletId: w.id, note: "Salary", freq: "monthly", nextDate: ymd(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)), active: true },
+      { id: uid(), type: "expense", amount: 18000, category: "car", walletId: w.id, note: "Car EMI", freq: "monthly", nextDate: ymd(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 5)), active: true },
+    ],
   };
 }
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Repeat, Paperclip } from "lucide-react";
 import { EXPENSE_CATS, INCOME_CATS, uid, today, niceDate } from "./lib.js";
 
 export default function AddTxn({ wallets, onClose, onSave, initial }) {
@@ -10,16 +10,38 @@ export default function AddTxn({ wallets, onClose, onSave, initial }) {
   const [toWalletId, setToWalletId] = useState(initial?.toWalletId || wallets[1]?.id || wallets[0]?.id);
   const [date, setDate] = useState(initial?.date || today());
   const [note, setNote] = useState(initial?.note || "");
+  const [repeat, setRepeat] = useState("none");
+  const [receipt, setReceipt] = useState(initial?.receipt || "");
 
   const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
   const canSave = amount > 0 && (type !== "transfer" || walletId !== toWalletId);
+
+  const pickReceipt = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 900, scale = Math.min(1, max / Math.max(img.width, img.height));
+        const cv = document.createElement("canvas");
+        cv.width = img.width * scale; cv.height = img.height * scale;
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        setReceipt(cv.toDataURL("image/jpeg", 0.6));
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(f);
+  };
 
   const save = () => {
     if (!canSave) return;
     const t = { id: initial?.id || uid(), type, amount: +amount, walletId, date, note };
     if (type === "transfer") t.toWalletId = toWalletId;
     else t.category = type === "income" ? (INCOME_CATS.find((c) => c.key === category) ? category : "salary") : category;
-    onSave(t);
+    if (receipt) t.receipt = receipt;
+    if (initial?.recurringId) t.recurringId = initial.recurringId;
+    onSave(t, repeat !== "none" ? { freq: repeat } : null);
   };
 
   return (
@@ -72,6 +94,29 @@ export default function AddTxn({ wallets, onClose, onSave, initial }) {
             </span>
           </label>
           <input className="sheet-note" placeholder="Add a note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+
+          {!initial && (
+            <label className="sheet-row"><span className="rr-lbl"><Repeat size={15} /> Repeat</span>
+              <span className="daterow">
+                {["none", "weekly", "monthly"].map((f) => (
+                  <button key={f} className={"dtbtn" + (repeat === f ? " on" : "")} onClick={() => setRepeat(f)}>{f === "none" ? "Off" : f[0].toUpperCase() + f.slice(1)}</button>
+                ))}
+              </span>
+            </label>
+          )}
+
+          <div className="rcpt-row">
+            {receipt ? (
+              <div className="rcpt-has">
+                <img src={receipt} alt="receipt" />
+                <button onClick={() => setReceipt("")}>Remove receipt</button>
+              </div>
+            ) : (
+              <label className="rcpt-add"><Paperclip size={15} /> Attach receipt photo
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={pickReceipt} />
+              </label>
+            )}
+          </div>
         </div>
 
         <button className="sheet-save" onClick={save} disabled={!canSave}>{initial ? "Save changes" : "Add transaction"}</button>

@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
-  tk, big, catOf, today, monthLabel, cashflowMonths, wealthSeries, categoryBreakdown, totalWealth,
+  tk, big, signed, catOf, kindOf, today, monthKey, monthLabel, niceDate, cashflowMonths, wealthSeries, categoryBreakdown, totalWealth,
 } from "./lib.js";
 import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import { derive } from "./derive.js";
 import { RATES, taxBD, realReturn, projectSeries, goalEval, buildInsights, emi } from "./planlib.js";
+import { addMonths } from "./recurring.js";
 import { loadSources, adminToCatalog } from "./rateadmin.js";
 import Marketplace from "../components/Marketplace.jsx";
 
@@ -26,7 +27,7 @@ export default function Plan({ data, addGoal, delGoal }) {
       {seg === "Overview" && <Overview data={data} d={d} />}
       {seg === "Health" && <Health d={d} />}
       {seg === "Goals" && <Goals d={d} addGoal={addGoal} delGoal={delGoal} />}
-      {seg === "Future" && <Future d={d} />}
+      {seg === "Future" && <Future d={d} data={data} />}
       {seg === "Rates" && (() => {
         const { extra, extraInst } = adminToCatalog(loadSources());
         return (
@@ -49,11 +50,25 @@ function Overview({ data, d }) {
   const bars = useMemo(() => cashflowMonths(txns, 6), [txns]);
   const series = useMemo(() => wealthSeries(wallets, txns, 6), [wallets, txns]);
   const cats = useMemo(() => categoryBreakdown(txns, "expense", mk), [txns, mk]);
+  const inM = txns.filter((t) => monthKey(t.date) === mk);
+  const incM = inM.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const expM = inM.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const nwChange = series.length >= 2 ? series[series.length - 1].value - series[series.length - 2].value : 0;
   return (
     <>
+      <div className="plan-digest">
+        <div className="pd-title">{monthLabel(mk)} so far</div>
+        <div className="pd-grid">
+          <div><span>In</span><b className="pos">{tk(incM)}</b></div>
+          <div><span>Out</span><b className="neg">{tk(expM)}</b></div>
+          <div><span>Net</span><b className={incM - expM >= 0 ? "pos" : "neg"}>{signed(incM - expM)}</b></div>
+          <div><span>Net worth</span><b className={nwChange >= 0 ? "pos" : "neg"}>{(nwChange >= 0 ? "+" : "") + big(nwChange)}</b></div>
+        </div>
+        {cats[0] && <div className="pd-foot">Biggest category: <b>{cats[0].label}</b> at {tk(cats[0].amount)} ({Math.round(cats[0].pct)}%)</div>}
+      </div>
       <div className="m-cfsplit">
-        <div className="cf in"><span>Income</span><b>{tk(d.monthlyIncome)}</b></div>
-        <div className="cf out"><span>Expenses</span><b>{tk(d.monthlyExpense)}</b></div>
+        <div className="cf in"><span>Income · avg/mo</span><b>{tk(d.monthlyIncome)}</b></div>
+        <div className="cf out"><span>Expenses · avg/mo</span><b>{tk(d.monthlyExpense)}</b></div>
       </div>
       <div className="plan-sec">Cash flow · last 6 months</div>
       <CashflowBars data={bars} />
@@ -117,11 +132,11 @@ function Health({ d }) {
 
 function Goals({ d, addGoal, delGoal }) {
   const [open, setOpen] = useState(false);
-  const [g, setG] = useState({ name: "", cost: 0, dp: 20, rate: 13, tenure: 10, years: 3 });
+  const [g, setG] = useState({ name: "", cost: 0, dp: 20, rate: 13, tenure: 10, years: 3, monthly: 0 });
   const create = () => {
     if (!g.name.trim() || g.cost <= 0) return;
     addGoal({ ...g, name: g.name.trim() });
-    setG({ name: "", cost: 0, dp: 20, rate: 13, tenure: 10, years: 3 });
+    setG({ name: "", cost: 0, dp: 20, rate: 13, tenure: 10, years: 3, monthly: 0 });
     setOpen(false);
   };
   return (
@@ -129,6 +144,8 @@ function Goals({ d, addGoal, delGoal }) {
       {d.goals.length === 0 && <p className="m-empty">No goals yet. Add a flat, car, or anything you're saving for.</p>}
       {d.goals.map((goal) => {
         const e = goalEval(goal, d.surplus, d.monthlyIncome, d.totalEMI);
+        const contrib = goal.monthly || 0;
+        const onPace = contrib >= e.reqSave;
         return (
           <div className={"plan-goal " + e.level} key={goal.id}>
             <div className="pg-top"><b>{goal.name}</b><button className="pg-del" onClick={() => delGoal(goal.id)}><Trash2 size={15} /></button></div>
@@ -138,6 +155,12 @@ function Goals({ d, addGoal, delGoal }) {
               <span>EMI <b>{tk(e.loanEMI)}</b></span>
               <span>Interest <b className="warn">{big(e.totalInterest)}</b></span>
             </div>
+            {contrib > 0 && (
+              <div className="pg-pace">
+                <div className="pgp-bar"><span style={{ width: Math.min(100, e.reqSave > 0 ? (contrib / e.reqSave) * 100 : 100) + "%", background: onPace ? "#0ea372" : "#f59f0a" }} /></div>
+                <div className="pgp-tx">Putting in {tk(contrib)}/mo — {onPace ? "on pace ✓" : `${tk(Math.max(0, e.reqSave - contrib))}/mo short`}</div>
+              </div>
+            )}
             <div className={"pg-verdict " + e.level}>{e.verdict}</div>
           </div>
         );
@@ -154,6 +177,9 @@ function Goals({ d, addGoal, delGoal }) {
             <label>Loan %<input value={g.rate} onChange={(e) => setG({ ...g, rate: +e.target.value || 0 })} /></label>
             <label>Loan (y)<input value={g.tenure} onChange={(e) => setG({ ...g, tenure: +e.target.value || 1 })} /></label>
           </div>
+          <div className="m-bform-row">
+            <span className="m-money"><i>৳</i><input inputMode="numeric" placeholder="I'll save monthly (optional)" value={g.monthly || ""} onChange={(e) => setG({ ...g, monthly: parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0 })} /></span>
+          </div>
           <div className="m-bform-actions">
             <button className="ghost" onClick={() => setOpen(false)}>Cancel</button>
             <button className="primary" onClick={create}>Add goal</button>
@@ -166,13 +192,24 @@ function Goals({ d, addGoal, delGoal }) {
   );
 }
 
-function Future({ d }) {
+function Future({ d, data }) {
   const [years, setYears] = useState(10);
   const [invest, setInvest] = useState(Math.round(Math.min(0.2 * d.monthlyIncome * 12, 1000000) * 0.5));
   const series = projectSeries(d.netWorth, d.surplus * 12, d.blendedReturn, years);
   const end = series[series.length - 1];
   const annualTaxable = d.monthlyIncome * 12;
   const tax = taxBD(annualTaxable, invest);
+
+  const mats = (data.wallets || [])
+    .filter((w) => w.start && w.tenureMonths)
+    .map((w) => {
+      const matDate = addMonths(w.start, w.tenureMonths);
+      const yrs = w.tenureMonths / 12;
+      const rate = w.rate || kindOf(w.kind).ret;
+      const principal = w.opening || 0;
+      return { name: w.name, kind: w.kind, matDate, value: principal * (1 + (rate / 100) * yrs), principal, rate };
+    })
+    .sort((a, b) => a.matDate.localeCompare(b.matDate));
 
   const W = 380, H = 170, PL = 6, PR = 6, PT = 14, PB = 22;
   const vals = series.flatMap((p) => [p.nom, p.real]);
@@ -205,6 +242,21 @@ function Future({ d }) {
         <div className="pt-row total"><span>Estimated tax</span><b>{tk(tax.net)}</b></div>
       </div>
       <p className="plan-note">Sanchayapatra/DPS earn ~{RATES.sanchayapatra}% <i>and</i> cut this bill via the 15% rebate. Verify slabs with the NBR.</p>
+
+      {mats.length > 0 && (
+        <>
+          <div className="plan-sec">Maturities</div>
+          <div className="m-list">
+            {mats.map((m, i) => (
+              <div className="mat-card" key={i}>
+                <div className="mat-top"><b>{m.name}</b><span className="mat-when">{niceDate(m.matDate)}</span></div>
+                <div className="mat-row"><span>{kindOf(m.kind).label} · {m.rate}%</span><span>{tk(m.principal)} → <b className="pos">{tk(m.value)}</b></span></div>
+              </div>
+            ))}
+          </div>
+          <p className="plan-note">Projected value is indicative (simple interest on principal). Sanchayapatra profit is usually paid periodically — treat this as a ballpark.</p>
+        </>
+      )}
     </>
   );
 }

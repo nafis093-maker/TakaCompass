@@ -1,4 +1,4 @@
-import { monthKey, today, walletBalance, kindOf, LIQUID_KINDS, catOf } from "./lib.js";
+import { monthKey, today, ymd, walletBalance, kindOf, LIQUID_KINDS, catOf } from "./lib.js";
 
 const ESSENTIAL = new Set(["food", "transport", "home", "bills", "health", "education", "family", "groceries"]);
 const sum = (arr) => arr.reduce((s, x) => s + x, 0);
@@ -6,7 +6,7 @@ const GROUP_COLOR = { Liquid: "#06b6d4", "Fixed-income": "#10b981", Equity: "#8b
 
 // Everything the analytics layer needs, derived from the simple money data.
 export function derive(data) {
-  const { wallets, txns, loans = [], goals = [] } = data;
+  const { wallets, txns, loans = [], goals = [], budgets = [] } = data;
   const mk = today().slice(0, 7);
 
   // Use the same trailing window for income AND expense so payday timing and
@@ -50,9 +50,24 @@ export function derive(data) {
     .map(([k, v]) => ({ k, v, pct: totalAssets > 0 ? (v / totalAssets) * 100 : 0, color: GROUP_COLOR[k] || "#94a3b8" }))
     .sort((a, b) => b.v - a.v);
 
+  // engagement signals
+  const dateSet = new Set(txns.map((t) => t.date));
+  let loggingStreak = 0;
+  let cur = today();
+  while (dateSet.has(cur)) { loggingStreak++; const dt = new Date(cur); dt.setDate(dt.getDate() - 1); cur = ymd(dt); }
+
+  const budgetAlerts = budgets
+    .map((b) => {
+      const spent = txns.filter((t) => t.type === "expense" && monthKey(t.date) === mk && (b.category === "all" || t.category === b.category)).reduce((s, t) => s + t.amount, 0);
+      return { name: b.name, spent, amount: b.amount, pct: b.amount > 0 ? (spent / b.amount) * 100 : 0 };
+    })
+    .filter((x) => x.pct >= 85)
+    .sort((a, b) => b.pct - a.pct);
+
   return {
     mk, monthlyIncome, monthlyExpense, expensesByCat, essentialMonthly,
     assets, totalAssets, liquid, loans, totalLoans, totalEMI, netWorth,
     blendedReturn, surplus, savingsRate, dti, emMonths, allocation, goals,
+    loggingStreak, budgetAlerts,
   };
 }

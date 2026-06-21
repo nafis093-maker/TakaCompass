@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
   Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark, Upload,
+  CalendarClock, Moon, UploadCloud, Search, Bell,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
@@ -13,11 +14,14 @@ import AddAccount from "./AddAccount.jsx";
 import ImportSms from "./ImportSms.jsx";
 import StatementImport from "./StatementImport.jsx";
 import RateAdmin from "./RateAdmin.jsx";
+import Recurring from "./Recurring.jsx";
+import Zakat from "./Zakat.jsx";
 import Plan from "./Plan.jsx";
 import { derive } from "./derive.js";
 import { buildInsights } from "./planlib.js";
+import { materializeDue, nextAfter, upcoming, makeRule } from "./recurring.js";
 import { parseOne } from "./smsparse.js";
-import { isNative, watchSms, stopWatch } from "./native.js";
+import { isNative, watchSms, stopWatch, scheduleReminders, remindersAvailable } from "./native.js";
 
 const NAV = [
   { key: "timeline", label: "Timeline", Icon: Receipt },
@@ -37,6 +41,8 @@ export default function MoneyApp({ user, onSignOut }) {
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState("");
   const [adminOpen, setAdminOpen] = useState(false);
+  const [recurringOpen, setRecurringOpen] = useState(false);
+  const [zakatOpen, setZakatOpen] = useState(false);
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(""), 3500); return () => clearTimeout(id); }, [toast]);
@@ -53,7 +59,19 @@ export default function MoneyApp({ user, onSignOut }) {
     return () => { if (sub && sub.remove) sub.remove(); stopWatch(); };
   }, []);
 
-  const { wallets, txns, budgets, loans = [], goals = [] } = data;
+  const { wallets, txns, budgets, loans = [], goals = [], recurring = [] } = data;
+
+  // Catch up any due recurring transactions when the app opens.
+  useEffect(() => {
+    setData((d) => {
+      const res = materializeDue(d);
+      if (!res.txns.length) return d;
+      return { ...d, txns: [...d.txns, ...res.txns], recurring: res.recurring };
+    });
+  }, []);
+
+  // Keep device reminders in sync with upcoming bills (native only).
+  useEffect(() => { if (isNative()) scheduleReminders(upcoming(data.recurring, 31)); }, [data.recurring]);
 
   const importTxns = (list, skipped = 0) => {
     if (list && list.length) setData((d) => ({ ...d, txns: [...d.txns, ...list] }));
@@ -80,11 +98,34 @@ export default function MoneyApp({ user, onSignOut }) {
   };
   const clearData = () => { setData(emptyData()); setTab("timeline"); setToast("All data cleared"); };
   const loadSample = () => { setData(sampleData()); setTab("timeline"); setToast("Sample data loaded — clear it anytime from More"); };
+  const restoreData = (obj) => {
+    if (!obj || !Array.isArray(obj.wallets)) { setToast("That file isn't a Taka Compass backup"); return; }
+    setData({ wallets: obj.wallets, txns: obj.txns || [], budgets: obj.budgets || [], loans: obj.loans || [], goals: obj.goals || [], recurring: obj.recurring || [] });
+    setTab("timeline"); setToast("Backup restored");
+  };
+  const exportCsv = () => {
+    const wn = (id) => wallets.find((w) => w.id === id)?.name || "";
+    const rows = [["Date", "Type", "Category", "Amount", "Wallet", "Note"]];
+    [...txns].sort((a, b) => a.date.localeCompare(b.date)).forEach((t) => rows.push([t.date, t.type, t.category || "", t.amount, wn(t.walletId), t.note || ""]));
+    const csv = rows.map((r) => r.map((c) => (/[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c)).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a = document.createElement("a"); a.href = url; a.download = "taka-compass-transactions.csv"; a.click(); URL.revokeObjectURL(url);
+  };
 
-  const saveTxn = (t) => {
-    setData((d) => ({ ...d, txns: d.txns.some((x) => x.id === t.id) ? d.txns.map((x) => (x.id === t.id ? t : x)) : [...d.txns, t] }));
+  const saveTxn = (t, repeat) => {
+    setData((d) => {
+      const txns = d.txns.some((x) => x.id === t.id) ? d.txns.map((x) => (x.id === t.id ? t : x)) : [...d.txns, t];
+      let recurring = d.recurring || [];
+      if (repeat && repeat.freq && !t.recurringId && !d.txns.some((x) => x.id === t.id)) {
+        recurring = [...recurring, makeRule({ ...t, freq: repeat.freq, nextDate: nextAfter(t.date, repeat.freq, t.date) })];
+      }
+      return { ...d, txns, recurring };
+    });
     setAdding(false); setEditing(null);
   };
+  const addRule = (r) => setData((d) => ({ ...d, recurring: [...(d.recurring || []), r] }));
+  const updRule = (id, patch) => setData((d) => ({ ...d, recurring: (d.recurring || []).map((r) => (r.id === id ? { ...r, ...patch } : r)) }));
+  const delRule = (id) => setData((d) => ({ ...d, recurring: (d.recurring || []).filter((r) => r.id !== id) }));
   const delTxn = (id) => setData((d) => ({ ...d, txns: d.txns.filter((t) => t.id !== id) }));
   const addWallet = (w) => setData((d) => ({ ...d, wallets: [...d.wallets, w] }));
   const delWallet = (id) => {
@@ -100,15 +141,17 @@ export default function MoneyApp({ user, onSignOut }) {
   const delGoal = (id) => setData((d) => ({ ...d, goals: (d.goals || []).filter((g) => g.id !== id) }));
 
   if (adminOpen) return <RateAdmin onClose={() => setAdminOpen(false)} />;
+  if (recurringOpen) return <Recurring wallets={wallets} recurring={recurring} onAdd={addRule} onUpdate={updRule} onDelete={delRule} nativeReminders={remindersAvailable()} onClose={() => setRecurringOpen(false)} />;
+  if (zakatOpen) return <Zakat wallets={wallets} txns={txns} onClose={() => setZakatOpen(false)} />;
 
   return (
     <div className="m-app">
       <div className="m-screen">
-        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} />}
+        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} />}
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
-        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} />}
+        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} onRecurring={() => setRecurringOpen(true)} onZakat={() => setZakatOpen(true)} onRestore={restoreData} onSample={loadSample} />}
       </div>
 
       {tab === "timeline" && (
@@ -137,8 +180,8 @@ export default function MoneyApp({ user, onSignOut }) {
   );
 }
 
-function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample }) {
-  const { txns, wallets } = data;
+function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring }) {
+  const { txns, wallets, recurring = [] } = data;
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
   const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
@@ -147,9 +190,15 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
   const insights = useMemo(() => buildInsights(d, Math.min(0.2 * d.monthlyIncome * 12, 1000000) * 0.5), [d]);
   const hero = insights[0];
   const [seg, setSeg] = useState("spend");
+  const [q, setQ] = useState("");
+  const soon = useMemo(() => upcoming(recurring, 14), [recurring]);
   const wname = (id) => wallets.find((w) => w.id === id)?.name || "Wallet";
 
-  const sorted = [...txns].sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+  const ql = q.trim().toLowerCase();
+  const shown = ql
+    ? txns.filter((t) => (t.note || "").toLowerCase().includes(ql) || catOf(t.category).label.toLowerCase().includes(ql) || String(t.amount).includes(ql) || wname(t.walletId).toLowerCase().includes(ql))
+    : txns;
+  const sorted = [...shown].sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
   const groups = [];
   sorted.forEach((t) => {
     const g = groups.find((x) => x.date === t.date);
@@ -229,11 +278,24 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
 
       {seg === "act" && (
         <>
+          {soon.length > 0 && (
+            <button className="m-upcoming" onClick={openRecurring}>
+              <span className="mu-ic"><Bell size={16} /></span>
+              <span className="mu-tx"><b>{soon.length} upcoming</b> in the next 2 weeks · next {niceDate(soon[0].nextDate)} {soon[0].note ? "· " + soon[0].note : ""}</span>
+              <ChevronRight size={16} />
+            </button>
+          )}
           <div className="m-overrow">
             <button className="m-overview alt" onClick={openUpload}><FileText size={16} /> Statement</button>
             <button className="m-overview alt" onClick={openImport}><MessageSquareText size={16} /> SMS</button>
+            <button className="m-overview alt" onClick={onCsv} title="Export CSV"><Download size={16} /> CSV</button>
           </div>
-          {groups.length === 0 && <p className="m-empty">No transactions yet. Tap + to add your first one.</p>}
+          <div className="m-search">
+            <Search size={16} />
+            <input placeholder="Search transactions…" value={q} onChange={(e) => setQ(e.target.value)} />
+            {q && <button onClick={() => setQ("")}>✕</button>}
+          </div>
+          {groups.length === 0 && <p className="m-empty">{ql ? "No matches." : "No transactions yet. Tap + to add your first one."}</p>}
           {groups.map((g) => {
             const dayTotal = g.items.reduce((s, t) => s + (t.type === "income" ? t.amount : t.type === "expense" ? -t.amount : 0), 0);
             return (
@@ -248,9 +310,10 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
                         {isT ? <ChevronRight size={20} /> : <c.Icon size={20} strokeWidth={2.2} />}
                       </span>
                       <div className="m-txmeta">
-                        <div className="m-txname">{isT ? "Transfer" : c.label}</div>
+                        <div className="m-txname">{isT ? "Transfer" : c.label}{t.recurringId ? <span className="m-tag-rec">auto</span> : ""}</div>
                         <div className="m-txwallet">{wname(t.walletId)}{t.note ? " · " + t.note : ""}</div>
                       </div>
+                      {t.receipt && <img className="m-txrcpt" src={t.receipt} alt="receipt" />}
                       <div className={"m-txamt " + (t.type === "income" ? "pos" : t.type === "expense" ? "neg" : "")}>
                         {t.type === "income" ? "+" : t.type === "expense" ? "-" : ""}{tk(t.amount)}
                       </div>
@@ -355,11 +418,17 @@ function Budgets({ data, addBudget, delBudget }) {
   );
 }
 
-function More({ data, user, onSignOut, onClear, onAdmin }) {
+function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, onRestore, onSample }) {
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = "taka-compass-data.json"; a.click();
+  };
+  const restore = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { onRestore(JSON.parse(r.result)); } catch { onRestore(null); } };
+    r.readAsText(f); e.target.value = "";
   };
   const clear = () => {
     if (!confirm("Clear ALL data — every transaction, wallet, budget, loan and goal? This can't be undone.")) return;
@@ -374,12 +443,16 @@ function More({ data, user, onSignOut, onClear, onAdmin }) {
         <div><div className="m-pname">{user.name}</div><div className="m-pmail">{user.email}</div></div>
       </div>
       <div className="m-menu">
+        <button onClick={onRecurring}><span className="mm-ic" style={{ color: "#f59f0a", background: "#fff5e0" }}><CalendarClock size={20} /></span><span className="mm-txt"><b>Recurring &amp; bills</b><i>Salary, rent, EMIs — auto-post and remind</i></span><ChevronRight size={18} /></button>
+        <button onClick={onZakat}><span className="mm-ic" style={{ color: "#10b981", background: "#eefaf4" }}><Moon size={20} /></span><span className="mm-txt"><b>Zakat calculator</b><i>2.5% of zakatable wealth above nisab</i></span><ChevronRight size={18} /></button>
         <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON (backup)</i></span><ChevronRight size={18} /></button>
+        <label className="mm-file"><span className="mm-ic" style={{ color: "#0891b2" }}><UploadCloud size={20} /></span><span className="mm-txt"><b>Restore from backup</b><i>Load a previously exported JSON file</i></span><ChevronRight size={18} /><input type="file" accept="application/json,.json" style={{ display: "none" }} onChange={restore} /></label>
         <button onClick={onAdmin}><span className="mm-ic" style={{ color: "#0ea372" }}><Landmark size={20} /></span><span className="mm-txt"><b>Rate sources (admin)</b><i>Manage bank rate links shown in the marketplace</i></span><ChevronRight size={18} /></button>
+        <button onClick={onSample}><span className="mm-ic" style={{ color: "#8b5cf6", background: "#f3f0fb" }}><Sparkles size={20} /></span><span className="mm-txt"><b>Load sample data</b><i>Explore the app with example numbers</i></span><ChevronRight size={18} /></button>
         <button onClick={clear}><span className="mm-ic" style={{ color: "#fa5a7d", background: "#fef0f3" }}><Trash2 size={20} /></span><span className="mm-txt"><b>Clear all data</b><i>Erase everything and start fresh</i></span><ChevronRight size={18} /></button>
         <button onClick={onSignOut}><span className="mm-ic" style={{ color: "#fa5a7d" }}><LogOut size={20} /></span><span className="mm-txt"><b>Sign out</b></span><ChevronRight size={18} /></button>
       </div>
-      <p className="m-note">One app: log income, spending, wallets, loans and goals the simple way — the Plan tab turns it all into net worth, budgets, tax, projections and live loan/deposit rates automatically. Your data stays in this browser; there's no bank auto-sync (Bangladesh has no open-banking feed yet), which also keeps it fully private to you.</p>
+      <p className="m-note">One app: log income, spending, wallets, loans and goals the simple way — the Plan tab turns it all into net worth, budgets, tax, projections and live loan/deposit rates automatically. Your data stays in this browser; there's no bank auto-sync (Bangladesh has no open-banking feed yet), which also keeps it fully private to you. Export a backup now and then so you don't lose it.</p>
     </div>
   );
 }
