@@ -57,25 +57,26 @@ export const big = (n) => {
   if (a >= 1e3) return "৳" + Math.round(n / 1e3) + "k";
   return "৳" + Math.round(n);
 };
-export const uid = () => Math.random().toString(36).slice(2, 9);
-export const today = () => new Date().toISOString().slice(0, 10);
+export const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10));
+// Local-time date helpers (Dhaka is UTC+6 — toISOString would shift the day).
+const pad = (n) => String(n).padStart(2, "0");
+export const ymd = (dt) => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+export const today = () => ymd(new Date());
 export const monthKey = (d) => d.slice(0, 7);
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const monthLabel = (mk) => MON[parseInt(mk.slice(5, 7), 10) - 1];
 export const niceDate = (d) => {
   if (d === today()) return "Today";
-  const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-  if (d === y) return "Yesterday";
+  if (d === ymd(new Date(Date.now() - 864e5))) return "Yesterday";
   const dt = new Date(d);
   return `${MON[dt.getMonth()]} ${dt.getDate()}`;
 };
 export const lastMonths = (n) => {
   const out = [];
   const d = new Date();
-  d.setDate(1);
   for (let i = n - 1; i >= 0; i--) {
     const x = new Date(d.getFullYear(), d.getMonth() - i, 1);
-    out.push(x.toISOString().slice(0, 7));
+    out.push(`${x.getFullYear()}-${pad(x.getMonth() + 1)}`);
   }
   return out;
 };
@@ -93,7 +94,7 @@ export function loadMoney(email) {
       return d;
     }
   } catch {}
-  return seed();
+  return emptyData();
 }
 export function saveMoney(email, data) {
   try { localStorage.setItem(KEY(email), JSON.stringify(data)); } catch {}
@@ -107,7 +108,7 @@ export const txnFingerprint = (t) =>
   t.ref
     ? "ref:" + String(t.ref).toLowerCase()
     : [t.date, t.type, Math.round(t.amount || 0), String(t.note || "").toLowerCase().replace(/\s+/g, " ").trim().slice(0, 30)].join("|");
-function seed() {
+export function sampleData() {
   const w = { id: uid(), name: "Cash Wallet", kind: "cash", opening: 0, color: "#0ea372" };
   const fdr = { id: uid(), name: "FDR savings", kind: "fdr", opening: 500000, color: "#14b8a6" };
   return {

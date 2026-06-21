@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
-  loadMoney, saveMoney, emptyData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown,
+  loadMoney, saveMoney, emptyData, sampleData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown,
 } from "./lib.js";
 import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
@@ -79,6 +79,7 @@ export default function MoneyApp({ user, onSignOut }) {
     setToast(parts.join(" · "));
   };
   const clearData = () => { setData(emptyData()); setTab("timeline"); setToast("All data cleared"); };
+  const loadSample = () => { setData(sampleData()); setTab("timeline"); setToast("Sample data loaded — clear it anytime from More"); };
 
   const saveTxn = (t) => {
     setData((d) => ({ ...d, txns: d.txns.some((x) => x.id === t.id) ? d.txns.map((x) => (x.id === t.id ? t : x)) : [...d.txns, t] }));
@@ -86,7 +87,11 @@ export default function MoneyApp({ user, onSignOut }) {
   };
   const delTxn = (id) => setData((d) => ({ ...d, txns: d.txns.filter((t) => t.id !== id) }));
   const addWallet = (w) => setData((d) => ({ ...d, wallets: [...d.wallets, w] }));
-  const delWallet = (id) => setData((d) => ({ ...d, wallets: d.wallets.filter((w) => w.id !== id) }));
+  const delWallet = (id) => {
+    if (wallets.length <= 1) { setToast("Keep at least one wallet"); return; }
+    if (txns.some((t) => t.walletId === id || t.toWalletId === id)) { setToast("This wallet still has transactions — remove or reassign them first"); return; }
+    setData((d) => ({ ...d, wallets: d.wallets.filter((w) => w.id !== id) }));
+  };
   const addLoan = (l) => setData((d) => ({ ...d, loans: [...(d.loans || []), l] }));
   const delLoan = (id) => setData((d) => ({ ...d, loans: (d.loans || []).filter((l) => l.id !== id) }));
   const addBudget = (b) => setData((d) => ({ ...d, budgets: [...d.budgets, { ...b, id: uid() }] }));
@@ -99,7 +104,7 @@ export default function MoneyApp({ user, onSignOut }) {
   return (
     <div className="m-app">
       <div className="m-screen">
-        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} />}
+        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} />}
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
@@ -132,7 +137,7 @@ export default function MoneyApp({ user, onSignOut }) {
   );
 }
 
-function Timeline({ data, onEdit, goPlan, openImport, openUpload }) {
+function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample }) {
   const { txns, wallets } = data;
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
@@ -144,12 +149,28 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload }) {
   const [seg, setSeg] = useState("spend");
   const wname = (id) => wallets.find((w) => w.id === id)?.name || "Wallet";
 
-  const sorted = [...txns].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  const sorted = [...txns].sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
   const groups = [];
   sorted.forEach((t) => {
     const g = groups.find((x) => x.date === t.date);
     (g || groups[groups.push({ date: t.date, items: [] }) - 1]).items.push(t);
   });
+
+  if (txns.length === 0) {
+    return (
+      <div className="scr">
+        <div className="m-onb">
+          <div className="m-onb-badge">৳</div>
+          <h2>Welcome to Taka Compass</h2>
+          <p>Track your money, see where it goes, and get plain-English suggestions tuned for Bangladesh. Pick a way to start:</p>
+          <button className="m-onb-act" onClick={openAdd}><span className="oa-ic" style={{ background: "#eefaf4", color: "#0ea372" }}><Plus size={18} /></span><span className="oa-tx"><b>Add income or an expense</b><i>Log your first transaction by hand</i></span><ChevronRight size={18} /></button>
+          <button className="m-onb-act" onClick={openUpload}><span className="oa-ic" style={{ background: "#e9f5fa", color: "#0891b2" }}><FileText size={18} /></span><span className="oa-tx"><b>Import a bank statement</b><i>Upload a PDF — we read the account &amp; transactions</i></span><ChevronRight size={18} /></button>
+          <button className="m-onb-act" onClick={onAddAccount}><span className="oa-ic" style={{ background: "#f3f0fb", color: "#8b5cf6" }}><WalletIcon size={18} /></span><span className="oa-tx"><b>Add a wallet or account</b><i>Cash, bank, FDR, Sanchayapatra, gold…</i></span><ChevronRight size={18} /></button>
+          <button className="m-onb-sample" onClick={onSample}>Just exploring? Load sample data</button>
+        </div>
+      </div>
+    );
+  }
 
   const PRIORITY = hero && (hero.level === "alert" || hero.level === "warn");
 

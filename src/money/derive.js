@@ -9,13 +9,21 @@ export function derive(data) {
   const { wallets, txns, loans = [], goals = [] } = data;
   const mk = today().slice(0, 7);
 
-  const incMonths = [...new Set(txns.filter((t) => t.type === "income").map((t) => monthKey(t.date)))].sort();
-  const incMonth = txns.some((t) => t.type === "income" && monthKey(t.date) === mk) ? mk : (incMonths[incMonths.length - 1] || mk);
-  const monthlyIncome = sum(txns.filter((t) => t.type === "income" && monthKey(t.date) === incMonth).map((t) => t.amount));
+  // Use the same trailing window for income AND expense so payday timing and
+  // statement-import gaps don't distort the surplus / savings rate. We average
+  // over the most recent (up to 3) months that have any income or expense.
+  const activeMonths = [...new Set(
+    txns.filter((t) => t.type === "income" || t.type === "expense").map((t) => monthKey(t.date))
+  )].sort();
+  const recent = activeMonths.slice(-3);
+  const span = recent.length || 1;
+  const inWin = (t) => recent.includes(monthKey(t.date));
+
+  const monthlyIncome = sum(txns.filter((t) => t.type === "income" && inWin(t)).map((t) => t.amount)) / span;
 
   const catMap = {};
-  txns.filter((t) => t.type === "expense" && monthKey(t.date) === mk).forEach((t) => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
-  const expensesByCat = Object.entries(catMap).map(([k, amt]) => ({ key: k, name: catOf(k).label, amt, ess: ESSENTIAL.has(k) }));
+  txns.filter((t) => t.type === "expense" && inWin(t)).forEach((t) => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+  const expensesByCat = Object.entries(catMap).map(([k, amt]) => ({ key: k, name: catOf(k).label, amt: amt / span, ess: ESSENTIAL.has(k) }));
   const monthlyExpense = sum(expensesByCat.map((e) => e.amt));
   const essFlagged = sum(expensesByCat.filter((e) => e.ess).map((e) => e.amt));
   const essentialMonthly = essFlagged || monthlyExpense;
