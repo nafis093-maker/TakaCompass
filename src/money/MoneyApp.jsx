@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
-  loadMoney, saveMoney, emptyData, sampleData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown,
+  loadMoney, saveMoney, emptyData, sampleData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown, txnFingerprint,
 } from "./lib.js";
 import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
@@ -18,6 +18,7 @@ import Recurring from "./Recurring.jsx";
 import Zakat from "./Zakat.jsx";
 import Wrapped from "./Wrapped.jsx";
 import Sync from "./Sync.jsx";
+import Review from "./Review.jsx";
 import Plan from "./Plan.jsx";
 import { CountUp } from "./anim.jsx";
 import { syncConfigured, pull as syncPull, push as syncPush, loadMeta as loadSyncMeta, saveMeta as saveSyncMeta } from "./sync.js";
@@ -49,19 +50,53 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   const [zakatOpen, setZakatOpen] = useState(false);
   const [wrappedOpen, setWrappedOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [editPendId, setEditPendId] = useState(null);
+
+  const fp = (parsed) => txnFingerprint(parsed);
+  const enqueueOne = (raw) => setData((d) => {
+    const p = parseOne(raw || ""); if (!p || !(p.amount > 0)) return d;
+    const parsed = { ...p, walletId: d.wallets[0]?.id };
+    const f = fp(parsed);
+    if (d.txns.some((t) => fp(t) === f) || (d.pending || []).some((x) => fp(x.parsed) === f)) return d;
+    return { ...d, pending: [...(d.pending || []), { id: uid(), raw: p.raw || raw, parsed, ts: Date.now() }] };
+  });
+  const enqueueMany = (rawList) => {
+    const existing = new Set(txns.map(fp));
+    const pend = data.pending || [];
+    const seen = new Set(pend.map((x) => fp(x.parsed)));
+    const add = [];
+    rawList.forEach((raw) => {
+      const p = parseOne(raw || ""); if (!p || !(p.amount > 0)) return;
+      const parsed = { ...p, walletId: wallets[0]?.id };
+      const f = fp(parsed);
+      if (existing.has(f) || seen.has(f)) return;
+      seen.add(f); add.push({ id: uid(), raw: p.raw || raw, parsed, ts: Date.now() });
+    });
+    if (add.length) setData((d) => ({ ...d, pending: [...(d.pending || []), ...add] }));
+    return add.length;
+  };
+  const confirmPending = (id, patch = {}) => setData((d) => {
+    const it = (d.pending || []).find((p) => p.id === id); if (!it) return d;
+    const t = { id: uid(), type: it.parsed.type, amount: it.parsed.amount, category: patch.category || it.parsed.category, walletId: patch.walletId || it.parsed.walletId || d.wallets[0]?.id, date: it.parsed.date, note: it.parsed.note, ref: it.parsed.ref };
+    return { ...d, txns: [...d.txns, t], pending: d.pending.filter((p) => p.id !== id) };
+  });
+  const dismissPending = (id) => setData((d) => ({ ...d, pending: (d.pending || []).filter((p) => p.id !== id) }));
+  const editPending = (item) => {
+    setReviewOpen(false);
+    setEditing({ type: item.parsed.type, amount: item.parsed.amount, category: item.parsed.category, walletId: item.parsed.walletId || wallets[0]?.id, date: item.parsed.date, note: item.parsed.note });
+    setEditPendId(item.id);
+    setAdding(true);
+  };
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(""), 3500); return () => clearTimeout(id); }, [toast]);
 
-  // On native Android: auto-capture new transaction SMS as they arrive.
+  // On native Android: capture new transaction SMS into the review queue.
   useEffect(() => {
     if (!isNative()) return;
     let sub;
-    watchSms((ev) => {
-      const d = parseOne(ev.body || "");
-      if (!d) return;
-      setData((prev) => ({ ...prev, txns: [...prev.txns, { id: uid(), type: d.type, amount: d.amount, category: d.category, walletId: prev.wallets[0]?.id, date: d.date, note: d.note, ref: d.ref }] }));
-    }).then((s) => { sub = s; });
+    watchSms((ev) => enqueueOne(ev.body || "")).then((s) => { sub = s; });
     return () => { if (sub && sub.remove) sub.remove(); stopWatch(); };
   }, []);
 
@@ -162,8 +197,10 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
       if (repeat && repeat.freq && !t.recurringId && !d.txns.some((x) => x.id === t.id)) {
         recurring = [...recurring, makeRule({ ...t, freq: repeat.freq, nextDate: nextAfter(t.date, repeat.freq, t.date) })];
       }
-      return { ...d, txns, recurring };
+      const pending = editPendId ? (d.pending || []).filter((p) => p.id !== editPendId) : d.pending;
+      return { ...d, txns, recurring, pending };
     });
+    setEditPendId(null);
     setAdding(false); setEditing(null);
   };
   const addRule = (r) => setData((d) => ({ ...d, recurring: [...(d.recurring || []), r] }));
@@ -187,15 +224,16 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   if (recurringOpen) return <Recurring wallets={wallets} recurring={recurring} onAdd={addRule} onUpdate={updRule} onDelete={delRule} nativeReminders={remindersAvailable()} onClose={() => setRecurringOpen(false)} />;
   if (zakatOpen) return <Zakat wallets={wallets} txns={txns} onClose={() => setZakatOpen(false)} />;
   if (syncOpen) return <Sync user={user} data={data} onReauth={onReauth} onApply={(d) => { setData(d); setTab("timeline"); setToast("Synced from cloud"); }} onClose={() => setSyncOpen(false)} />;
+  if (reviewOpen) return <Review pending={data.pending || []} wallets={wallets} onConfirm={confirmPending} onDismiss={dismissPending} onEdit={editPending} onScan={enqueueMany} onClose={() => setReviewOpen(false)} />;
 
   return (
     <div className="m-app">
       <div className="m-screen">
-        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} openWrapped={() => setWrappedOpen(true)} />}
+        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} openWrapped={() => setWrappedOpen(true)} openReview={() => setReviewOpen(true)} />}
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
-        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} onRecurring={() => setRecurringOpen(true)} onZakat={() => setZakatOpen(true)} onRestore={restoreData} onSample={loadSample} onWrapped={() => setWrappedOpen(true)} onSync={() => setSyncOpen(true)} />}
+        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} onRecurring={() => setRecurringOpen(true)} onZakat={() => setZakatOpen(true)} onRestore={restoreData} onSample={loadSample} onWrapped={() => setWrappedOpen(true)} onSync={() => setSyncOpen(true)} onReview={() => setReviewOpen(true)} />}
       </div>
 
       {tab === "timeline" && (
@@ -225,8 +263,8 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   );
 }
 
-function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring, openWrapped }) {
-  const { txns, wallets, recurring = [] } = data;
+function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring, openWrapped, openReview }) {
+  const { txns, wallets, recurring = [], pending = [] } = data;
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
   const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
@@ -275,6 +313,14 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
         <div className="m-sublabel">Total wealth · {tk(spent)} spent in {monthLabel(mk)}</div>
         {spent > 0 && <button className="wr-pill" onClick={openWrapped}>✨ See your {monthLabel(mk)} Wrapped</button>}
       </div>
+
+      {pending.length > 0 && (
+        <button className="m-review-banner" onClick={openReview}>
+          <span className="mrb-dot">{pending.length}</span>
+          <span className="mrb-tx"><b>{pending.length} transaction{pending.length === 1 ? "" : "s"} to review</b> from your SMS</span>
+          <ChevronRight size={18} />
+        </button>
+      )}
 
       {hero && (
         <button className={"m-hero " + hero.level} onClick={goPlan}>
@@ -464,7 +510,8 @@ function Budgets({ data, addBudget, delBudget }) {
   );
 }
 
-function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, onRestore, onSample, onWrapped, onSync }) {
+function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, onRestore, onSample, onWrapped, onSync, onReview }) {
+  const pendN = (data.pending || []).length;
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -490,6 +537,7 @@ function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, o
       </div>
       <div className="m-menu">
         <button onClick={onWrapped}><span className="mm-ic" style={{ color: "#fff", background: "linear-gradient(135deg,#8b5cf6,#0ea372)" }}><Sparkles size={20} /></span><span className="mm-txt"><b>Taka Wrapped</b><i>Your month in money — animated &amp; shareable</i></span><ChevronRight size={18} /></button>
+        <button onClick={onReview}><span className="mm-ic" style={{ color: "#0891b2", background: "#e9f5fa" }}><MessageSquareText size={20} /></span><span className="mm-txt"><b>Review SMS{pendN ? ` (${pendN})` : ""}</b><i>Confirm transactions spotted in your texts</i></span><ChevronRight size={18} /></button>
         <button onClick={onRecurring}><span className="mm-ic" style={{ color: "#f59f0a", background: "#fff5e0" }}><CalendarClock size={20} /></span><span className="mm-txt"><b>Recurring &amp; bills</b><i>Salary, rent, EMIs — auto-post and remind</i></span><ChevronRight size={18} /></button>
         <button onClick={onZakat}><span className="mm-ic" style={{ color: "#10b981", background: "#eefaf4" }}><Moon size={20} /></span><span className="mm-txt"><b>Zakat calculator</b><i>2.5% of zakatable wealth above nisab</i></span><ChevronRight size={18} /></button>
         <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON (backup)</i></span><ChevronRight size={18} /></button>

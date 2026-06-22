@@ -91,6 +91,7 @@ export function loadMoney(email) {
       d.loans = d.loans || [];
       d.goals = d.goals || [];
       d.recurring = d.recurring || [];
+      d.pending = d.pending || [];
       d.wallets.forEach((w) => (w.kind = w.kind || "cash"));
       return d;
     }
@@ -102,7 +103,7 @@ export function saveMoney(email, data) {
 }
 export function emptyData() {
   const w = { id: uid(), name: "Cash Wallet", kind: "cash", opening: 0, color: "#0ea372" };
-  return { wallets: [w], txns: [], budgets: [], loans: [], goals: [], recurring: [] };
+  return { wallets: [w], txns: [], budgets: [], loans: [], goals: [], recurring: [], pending: [] };
 }
 // identity for dedup: a real transaction ref if we have one, else a fingerprint
 export const txnFingerprint = (t) =>

@@ -519,3 +519,27 @@
 .sy-auto i { display: block; font-style: normal; font-size: 12px; color: var(--mut); }
 .sy-auto input { width: 20px; height: 20px; accent-color: #0ea372; flex: none; }
 .sy-status { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--acc); text-align: center; }
+
+/* ---- SMS review queue ---- */
+.m-review-banner { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; cursor: pointer; margin: 4px 0 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid #cfeaf3; background: linear-gradient(135deg, #e9f5fa, #f4fbfd); }
+.m-review-banner .mrb-dot { width: 26px; height: 26px; border-radius: 50%; background: #0891b2; color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; flex: none; }
+.m-review-banner .mrb-tx { flex: 1; font-size: 13px; color: #0e3a4f; } .m-review-banner .mrb-tx b { display: inline; }
+
+.rv-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.rv-card { position: relative; border: 1px solid var(--line); border-radius: 18px; padding: 14px; background: #fff; box-shadow: 0 8px 24px -16px rgba(15,38,28,.4); touch-action: pan-y; user-select: none; transition: transform .22s ease, opacity .22s ease; }
+.rv-hint { position: absolute; top: 14px; font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; opacity: 0; transition: opacity .12s; }
+.rv-hint.left { right: 14px; color: #fa5a7d; background: #fef0f3; }
+.rv-hint.right { left: 14px; color: #0ea372; background: #eefaf4; }
+.rv-hint.on { opacity: 1; }
+.rv-top { display: flex; align-items: center; gap: 12px; }
+.rv-amt { flex: 1; }
+.rv-amt > div:first-child { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rv-date { font-size: 12px; color: var(--mut); }
+.rv-raw { font-size: 12px; color: var(--mut); background: #f7f9fb; border-radius: 10px; padding: 9px 11px; margin: 11px 0; line-height: 1.4; max-height: 64px; overflow: hidden; }
+.rv-edit { display: flex; gap: 8px; }
+.rv-edit select { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 9px; font-size: 13px; background: #fff; color: var(--tx); }
+.rv-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.rv-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 11px; padding: 11px; font-weight: 800; font-size: 14px; cursor: pointer; }
+.rv-skip { flex: 1; background: #fef0f3; color: #fa5a7d; }
+.rv-add { flex: 1; background: #0ea372; color: #fff; }
+.rv-edit-btn { background: #f0f3f6; color: var(--mut); width: 44px; flex: none; }
