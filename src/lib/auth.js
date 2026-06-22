@@ -35,7 +35,7 @@ export function signInWithGoogle() {
           const u = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
             headers: { Authorization: `Bearer ${resp.access_token}` },
           }).then((r) => r.json());
-          resolve({ provider: "google", name: u.name || u.email, email: u.email, picture: u.picture });
+          resolve({ provider: "google", name: u.name || u.email, email: u.email, picture: u.picture, token: resp.access_token });
         } catch (e) { reject(e); }
       },
     });

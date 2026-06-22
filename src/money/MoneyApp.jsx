@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
   Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark, Upload,
-  CalendarClock, Moon, UploadCloud, Search, Bell,
+  CalendarClock, Moon, UploadCloud, Search, Bell, Cloud,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
@@ -17,8 +17,10 @@ import RateAdmin from "./RateAdmin.jsx";
 import Recurring from "./Recurring.jsx";
 import Zakat from "./Zakat.jsx";
 import Wrapped from "./Wrapped.jsx";
+import Sync from "./Sync.jsx";
 import Plan from "./Plan.jsx";
 import { CountUp } from "./anim.jsx";
+import { syncConfigured, pull as syncPull, push as syncPush, loadMeta as loadSyncMeta, saveMeta as saveSyncMeta } from "./sync.js";
 import { derive } from "./derive.js";
 import { buildInsights } from "./planlib.js";
 import { materializeDue, nextAfter, upcoming, makeRule } from "./recurring.js";
@@ -33,7 +35,7 @@ const NAV = [
   { key: "more", label: "More", Icon: MoreHorizontal },
 ];
 
-export default function MoneyApp({ user, onSignOut }) {
+export default function MoneyApp({ user, onSignOut, onReauth }) {
   const [data, setData] = useState(() => loadMoney(user.email));
   const [tab, setTab] = useState("timeline");
   const [adding, setAdding] = useState(false);
@@ -46,6 +48,7 @@ export default function MoneyApp({ user, onSignOut }) {
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [zakatOpen, setZakatOpen] = useState(false);
   const [wrappedOpen, setWrappedOpen] = useState(false);
+  const [syncOpen, setSyncOpen] = useState(false);
 
   useEffect(() => { saveMoney(user.email, data); }, [user.email, data]);
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(""), 3500); return () => clearTimeout(id); }, [toast]);
@@ -85,6 +88,33 @@ export default function MoneyApp({ user, onSignOut }) {
 
   // Keep device reminders in sync with upcoming bills (native only).
   useEffect(() => { if (isNative()) scheduleReminders(upcoming(data.recurring, 31)); }, [data.recurring]);
+
+  // Opt-in cloud auto-sync: pull on open if remote is newer, push on change.
+  const syncTimer = useRef(null);
+  useEffect(() => {
+    if (!syncConfigured() || !user.token) return;
+    const meta = loadSyncMeta(user.email);
+    if (!meta.auto) return;
+    (async () => {
+      try {
+        const res = await syncPull(user.token);
+        if (res && res.data && Array.isArray(res.data.wallets) && (res.updatedAt || 0) > (meta.lastPush || 0)) {
+          setData(res.data);
+          saveSyncMeta(user.email, { ...meta, lastPull: Date.now(), remoteAt: res.updatedAt });
+        }
+      } catch {}
+    })();
+  }, []);
+  useEffect(() => {
+    if (!syncConfigured() || !user.token) return;
+    const meta = loadSyncMeta(user.email);
+    if (!meta.auto) return;
+    clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(async () => {
+      try { const at = Date.now(); await syncPush(user.token, data, at); saveSyncMeta(user.email, { ...loadSyncMeta(user.email), lastPush: at, remoteAt: at }); } catch {}
+    }, 2500);
+    return () => clearTimeout(syncTimer.current);
+  }, [data]);
 
   const importTxns = (list, skipped = 0) => {
     if (list && list.length) setData((d) => ({ ...d, txns: [...d.txns, ...list] }));
@@ -156,6 +186,7 @@ export default function MoneyApp({ user, onSignOut }) {
   if (adminOpen) return <RateAdmin onClose={() => setAdminOpen(false)} />;
   if (recurringOpen) return <Recurring wallets={wallets} recurring={recurring} onAdd={addRule} onUpdate={updRule} onDelete={delRule} nativeReminders={remindersAvailable()} onClose={() => setRecurringOpen(false)} />;
   if (zakatOpen) return <Zakat wallets={wallets} txns={txns} onClose={() => setZakatOpen(false)} />;
+  if (syncOpen) return <Sync user={user} data={data} onReauth={onReauth} onApply={(d) => { setData(d); setTab("timeline"); setToast("Synced from cloud"); }} onClose={() => setSyncOpen(false)} />;
 
   return (
     <div className="m-app">
@@ -164,7 +195,7 @@ export default function MoneyApp({ user, onSignOut }) {
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
-        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} onRecurring={() => setRecurringOpen(true)} onZakat={() => setZakatOpen(true)} onRestore={restoreData} onSample={loadSample} onWrapped={() => setWrappedOpen(true)} />}
+        {tab === "more" && <More data={data} user={user} onSignOut={onSignOut} onClear={clearData} onAdmin={() => setAdminOpen(true)} onRecurring={() => setRecurringOpen(true)} onZakat={() => setZakatOpen(true)} onRestore={restoreData} onSample={loadSample} onWrapped={() => setWrappedOpen(true)} onSync={() => setSyncOpen(true)} />}
       </div>
 
       {tab === "timeline" && (
@@ -433,7 +464,7 @@ function Budgets({ data, addBudget, delBudget }) {
   );
 }
 
-function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, onRestore, onSample, onWrapped }) {
+function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, onRestore, onSample, onWrapped, onSync }) {
   const exportData = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -463,6 +494,7 @@ function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, o
         <button onClick={onZakat}><span className="mm-ic" style={{ color: "#10b981", background: "#eefaf4" }}><Moon size={20} /></span><span className="mm-txt"><b>Zakat calculator</b><i>2.5% of zakatable wealth above nisab</i></span><ChevronRight size={18} /></button>
         <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON (backup)</i></span><ChevronRight size={18} /></button>
         <label className="mm-file"><span className="mm-ic" style={{ color: "#0891b2" }}><UploadCloud size={20} /></span><span className="mm-txt"><b>Restore from backup</b><i>Load a previously exported JSON file</i></span><ChevronRight size={18} /><input type="file" accept="application/json,.json" style={{ display: "none" }} onChange={restore} /></label>
+        <button onClick={onSync}><span className="mm-ic" style={{ color: "#2563eb", background: "#eaf1fe" }}><Cloud size={20} /></span><span className="mm-txt"><b>Cloud sync &amp; backup</b><i>Sync across devices (needs one-time setup)</i></span><ChevronRight size={18} /></button>
         <button onClick={onAdmin}><span className="mm-ic" style={{ color: "#0ea372" }}><Landmark size={20} /></span><span className="mm-txt"><b>Rate sources (admin)</b><i>Manage bank rate links shown in the marketplace</i></span><ChevronRight size={18} /></button>
         <button onClick={onSample}><span className="mm-ic" style={{ color: "#8b5cf6", background: "#f3f0fb" }}><Sparkles size={20} /></span><span className="mm-txt"><b>Load sample data</b><i>Explore the app with example numbers</i></span><ChevronRight size={18} /></button>
         <button onClick={clear}><span className="mm-ic" style={{ color: "#fa5a7d", background: "#fef0f3" }}><Trash2 size={20} /></span><span className="mm-txt"><b>Clear all data</b><i>Erase everything and start fresh</i></span><ChevronRight size={18} /></button>
