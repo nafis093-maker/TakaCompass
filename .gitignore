@@ -3,3 +3,11 @@ dist
 .DS_Store
 *.local
 .vercel
+
+# iOS / Capacitor generated
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/DerivedData/
+*.xcuserstate
+ios/App/App.xcworkspace/xcuserdata/

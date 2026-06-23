@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { X, Smartphone } from "lucide-react";
 import { parseSms } from "./smsparse.js";
 import { EXPENSE_CATS, INCOME_CATS, tk, uid, txnFingerprint } from "./lib.js";
-import { isNative, requestSms, readInbox, looksLikeTxn } from "./native.js";
+import { smsSupported, requestSms, readInbox, looksLikeTxn } from "./native.js";
 
 const SAMPLE = `You have received Tk 12,000.00 from 01712345678. Ref Salary. Balance Tk 18,500. TrxID 9AB1CD on 18/06/2026.
 Payment Tk 850.00 to Shwapno successful. bKash. Balance Tk 17,650.
@@ -59,7 +59,7 @@ export default function ImportSms({ wallets, onClose, onImport, existing = [] })
 
         <div className="sheet-body" style={{ paddingTop: 14 }}>
           <p className="sms-help">Paste one or more transaction SMS (bKash, Nagad, Rocket, bank/card). The app pulls out the amount, type and a category — check them, then import.</p>
-          {isNative() && (
+          {smsSupported() && (
             <button className="sms-auto" onClick={autoRead} disabled={!!busy}>
               <Smartphone size={18} /> {busy || "Read my SMS inbox automatically"}
             </button>

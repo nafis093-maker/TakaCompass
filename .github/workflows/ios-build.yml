@@ -1,0 +1,68 @@
+name: Build iOS app
+
+# Compiles the iOS app on a macOS runner (Xcode + CocoaPods). By default it
+# does an UNSIGNED simulator build — no Apple account needed — to prove it
+# builds and to run in the iOS Simulator. For a real device / TestFlight build
+# you must add signing secrets and switch to an archive+export (see IOS_BUILD.md).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "ios/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.*"
+      - "capacitor.config.*"
+      - ".github/workflows/ios-build.yml"
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor iOS (runs pod install)
+        run: npx cap sync ios
+
+      - name: Build (iOS Simulator, unsigned)
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package the .app
+        run: |
+          APP=$(find build -name "App.app" -type d | head -1)
+          echo "Found: $APP"
+          cd "$(dirname "$APP")"
+          zip -ry "$GITHUB_WORKSPACE/TakaCompass-simulator.app.zip" App.app
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: taka-compass-ios-simulator
+          path: TakaCompass-simulator.app.zip
+          if-no-files-found: error
+          retention-days: 30

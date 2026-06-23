@@ -26,7 +26,7 @@ import { derive } from "./derive.js";
 import { buildInsights } from "./planlib.js";
 import { materializeDue, nextAfter, upcoming, makeRule } from "./recurring.js";
 import { parseOne } from "./smsparse.js";
-import { isNative, watchSms, stopWatch, scheduleReminders, remindersAvailable } from "./native.js";
+import { isNative, smsSupported, watchSms, stopWatch, scheduleReminders, remindersAvailable } from "./native.js";
 
 const NAV = [
   { key: "timeline", label: "Timeline", Icon: Receipt },
@@ -94,7 +94,7 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
 
   // On native Android: capture new transaction SMS into the review queue.
   useEffect(() => {
-    if (!isNative()) return;
+    if (!smsSupported()) return;
     let sub;
     watchSms((ev) => enqueueOne(ev.body || "")).then((s) => { sub = s; });
     return () => { if (sub && sub.remove) sub.remove(); stopWatch(); };

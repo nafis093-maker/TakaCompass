@@ -1,11 +1,11 @@
 import React, { useState, useRef } from "react";
 import { ChevronLeft, Check, X, Inbox, Pencil } from "lucide-react";
 import { EXPENSE_CATS, INCOME_CATS, catOf, tk, niceDate } from "./lib.js";
-import { isNative, smsGranted, requestSms, readInbox } from "./native.js";
+import { isNative, smsSupported, smsGranted, requestSms, readInbox } from "./native.js";
 
 export default function Review({ pending = [], wallets, onConfirm, onDismiss, onEdit, onScan, onClose }) {
   const [scanning, setScanning] = useState("");
-  const native = isNative();
+  const canScan = smsSupported();
 
   const scan = async () => {
     setScanning("Reading your inbox…");
@@ -22,9 +22,9 @@ export default function Review({ pending = [], wallets, onConfirm, onDismiss, on
         <div className="m-title">Review SMS</div>
         <p className="plan-intro">Transactions we spotted in your bank &amp; mobile-money texts. Swipe right to add, left to skip — or tap to edit first. Nothing is saved until you confirm it.</p>
 
-        {native && <button className="m-create" onClick={scan} disabled={!!scanning}><Inbox size={18} /> {scanning || "Scan my inbox"}</button>}
-        {!native && <p className="m-note" style={{ marginTop: 0 }}>Live SMS capture and inbox scan work on the Android app. On the web, use “SMS” on the home screen to paste messages.</p>}
-        {scanning && native && <div className="sy-status">{scanning}</div>}
+        {canScan && <button className="m-create" onClick={scan} disabled={!!scanning}><Inbox size={18} /> {scanning || "Scan my inbox"}</button>}
+        {!canScan && <p className="m-note" style={{ marginTop: 0 }}>Automatic SMS capture is Android-only (Apple doesn't allow reading texts). On iPhone and the web, add transactions with the “SMS” paste tool on the home screen, or by hand.</p>}
+        {scanning && canScan && <div className="sy-status">{scanning}</div>}
 
         {pending.length === 0 ? (
           <p className="m-empty">Nothing to review right now.</p>

@@ -5,8 +5,15 @@ const SmsReader = registerPlugin("SmsReader");
 export const isNative = () => {
   try { return Capacitor.isNativePlatform(); } catch { return false; }
 };
+export const getPlatform = () => {
+  try { return Capacitor.getPlatform(); } catch { return "web"; }
+};
+// SMS reading exists only on Android (Apple does not allow inbox access at all).
+export const isAndroid = () => getPlatform() === "android";
+export const smsSupported = () => isNative() && isAndroid();
 
 export async function requestSms() {
+  if (!smsSupported()) return false;
   try {
     const r = await SmsReader.requestSmsPermission();
     return !!r.granted;
@@ -14,10 +21,12 @@ export async function requestSms() {
 }
 
 export async function smsGranted() {
+  if (!smsSupported()) return false;
   try { const r = await SmsReader.smsPermissionState(); return !!r.granted; } catch { return false; }
 }
 
 export async function readInbox(days = 120, max = 1000) {
+  if (!smsSupported()) return [];
   try {
     const r = await SmsReader.readInbox({ days, max });
     return r.messages || [];
@@ -25,6 +34,7 @@ export async function readInbox(days = 120, max = 1000) {
 }
 
 export async function watchSms(cb) {
+  if (!smsSupported()) return null;
   try {
     await SmsReader.startWatching();
     return await SmsReader.addListener("smsReceived", cb);
