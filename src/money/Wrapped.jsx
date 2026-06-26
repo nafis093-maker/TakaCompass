@@ -58,7 +58,7 @@ export default function Wrapped({ data, onClose }) {
   const go = (n) => { const el = scroller.current; if (el) el.scrollTo({ left: n * el.clientWidth, behavior: "smooth" }); };
 
   const share = async () => {
-    const text = `My ${month} in money 💸\nSpent ${tk(stats.spent)} · kept ${Math.round(stats.savingsRate)}%\nMain character: ${topKey ? catOf(topKey).label : "—"}\nMoney personality: ${stats.personality}\n— via Taka Compass`;
+    const text = `My ${month} in money 💸\nSpent ${tk(stats.spent)} · kept ${Math.round(stats.savingsRate)}%\nMain character: ${topKey ? catOf(topKey).label : "—"}\nMoney personality: ${stats.personality}\n— via Hisab`;
     try { if (navigator.share) await navigator.share({ title: "Taka Wrapped", text }); else { await navigator.clipboard.writeText(text); alert("Copied to clipboard!"); } } catch {}
   };
   const saveImg = async () => {
@@ -86,7 +86,7 @@ export default function Wrapped({ data, onClose }) {
                   <button className="wr-save" onClick={saveImg}><Download size={17} /> Save card</button>
                 </div>
               )}
-              {c.final && <div className="wr-brand">🧭 Taka Compass</div>}
+              {c.final && <div className="wr-brand">🧭 Hisab</div>}
             </div>
             {!c.final && <button className="wr-next" onClick={() => go(i + 1)} aria-label="Next"><ChevronRight size={26} /></button>}
           </div>

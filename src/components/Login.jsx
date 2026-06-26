@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { signInWithGoogle, signInWithApple, googleConfigured, appleConfigured } from "../lib/auth.js";
+import { t, getLang, setLang } from "../money/i18n.js";
 
 export default function Login({ onLogin }) {
   const [busy, setBusy] = useState(null);
@@ -25,24 +26,28 @@ export default function Login({ onLogin }) {
     <div className="login">
       <div className="login-bg" />
       <div className="login-card">
+        <div className="login-langbar">
+          <button className={getLang() === "en" ? "on" : ""} onClick={() => setLang("en")}>English</button>
+          <button className={getLang() === "bn" ? "on" : ""} onClick={() => setLang("bn")}>বাংলা</button>
+        </div>
         <div className="brandmark">৳</div>
-        <h1 className="login-title">Taka Compass</h1>
-        <p className="login-sub">Your money, mapped. Track it, grow it, plan the big stuff — built for Bangladesh. 🇧🇩</p>
+        <h1 className="login-title">{t("app.name")}</h1>
+        <p className="login-sub">{t("login.sub")} 🇧🇩</p>
 
         <div className="login-btns">
           <button className={"oauth google" + (busy === "google" ? " busy" : "")} onClick={google} disabled={!!busy}>
-            <GoogleG /> {busy === "google" ? "Connecting…" : "Continue with Google"}
+            <GoogleG /> {busy === "google" ? t("login.connecting") : t("login.google")}
           </button>
           <button className={"oauth apple" + (busy === "apple" ? " busy" : "")} onClick={apple} disabled={!!busy}>
-            <AppleLogo /> {busy === "apple" ? "Connecting…" : "Continue with Apple"}
+            <AppleLogo /> {busy === "apple" ? t("login.connecting") : t("login.apple")}
           </button>
           <button className="oauth guest" onClick={guest} disabled={!!busy}>
-            Skip — just let me in →
+            {t("login.guest")} →
           </button>
         </div>
 
         {hint && <p className="login-hint">{hint}</p>}
-        <p className="login-fine">No backend, no tracking. Your numbers stay in this browser, tied to your sign-in.</p>
+        <p className="login-fine">{t("login.fine")}</p>
       </div>
     </div>
   );

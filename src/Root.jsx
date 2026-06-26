@@ -5,8 +5,10 @@ import WelcomeSplash from "./components/WelcomeSplash.jsx";
 import MoneyApp from "./money/MoneyApp.jsx";
 import { saveSession, loadSession, clearSession } from "./lib/storage.js";
 import { signInWithGoogle } from "./lib/auth.js";
+import { useLang } from "./money/i18n.js";
 
 export default function Root() {
+  useLang();
   const [session, setSession] = useState(() => loadSession());
   const [splash, setSplash] = useState(false);
   const [welcomed, setWelcomed] = useState(() => {

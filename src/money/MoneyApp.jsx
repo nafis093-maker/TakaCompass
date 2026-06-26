@@ -24,6 +24,7 @@ import Plan from "./Plan.jsx";
 import { CountUp } from "./anim.jsx";
 import { voiceAvailable } from "./voice.js";
 import { warmTts } from "./tts.js";
+import { t, useLang, setLang, getLang } from "./i18n.js";
 import { syncConfigured, pull as syncPull, push as syncPush, loadMeta as loadSyncMeta, saveMeta as saveSyncMeta } from "./sync.js";
 import { derive } from "./derive.js";
 import { buildInsights } from "./planlib.js";
@@ -40,6 +41,7 @@ const NAV = [
 ];
 
 export default function MoneyApp({ user, onSignOut, onReauth }) {
+  useLang();
   const [data, setData] = useState(() => loadMoney(user.email));
   const [tab, setTab] = useState("timeline");
   const [adding, setAdding] = useState(false);
@@ -210,7 +212,7 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   const clearData = () => { setData(emptyData()); setTab("timeline"); setToast("All data cleared"); };
   const loadSample = () => { setData(sampleData()); setTab("timeline"); setToast("Sample data loaded — clear it anytime from More"); };
   const restoreData = (obj) => {
-    if (!obj || !Array.isArray(obj.wallets)) { setToast("That file isn't a Taka Compass backup"); return; }
+    if (!obj || !Array.isArray(obj.wallets)) { setToast("That file isn't a Hisab backup"); return; }
     setData({ wallets: obj.wallets, txns: obj.txns || [], budgets: obj.budgets || [], loans: obj.loans || [], goals: obj.goals || [], recurring: obj.recurring || [] });
     setTab("timeline"); setToast("Backup restored");
   };
@@ -287,7 +289,7 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
         {NAV.map((n) => (
           <button key={n.key} className={"m-navi" + (tab === n.key ? " on" : "")} onClick={() => setTab(n.key)}>
             <n.Icon size={21} strokeWidth={tab === n.key ? 2.6 : 2} />
-            <span>{n.label}</span>
+            <span>{t("nav." + n.key)}</span>
           </button>
         ))}
       </nav>
@@ -331,7 +333,7 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
       <div className="scr">
         <div className="m-onb">
           <div className="m-onb-badge">৳</div>
-          <h2>Welcome to Taka Compass</h2>
+          <h2>{t("app.name")}</h2>
           <p>Track your money, see where it goes, and get plain-English suggestions tuned for Bangladesh. Pick a way to start:</p>
           <button className="m-onb-act" onClick={openAdd}><span className="oa-ic" style={{ background: "#eefaf4", color: "#0ea372" }}><Plus size={18} /></span><span className="oa-tx"><b>Add income or an expense</b><i>Log your first transaction by hand</i></span><ChevronRight size={18} /></button>
           <button className="m-onb-act" onClick={openUpload}><span className="oa-ic" style={{ background: "#e9f5fa", color: "#0891b2" }}><FileText size={18} /></span><span className="oa-tx"><b>Import a bank statement</b><i>Upload a PDF — we read the account &amp; transactions</i></span><ChevronRight size={18} /></button>
@@ -568,23 +570,30 @@ function More({ data, user, onSignOut, onClear, onAdmin, onRecurring, onZakat, o
   };
   return (
     <div className="scr">
-      <div className="m-title">More</div>
+      <div className="m-title">{t("nav.more")}</div>
       <div className="m-profile">
         {user.picture ? <img src={user.picture} alt="" /> : <span className="m-pava">{(user.name || "U")[0]}</span>}
         <div><div className="m-pname">{user.name}</div><div className="m-pmail">{user.email}</div></div>
       </div>
+      <div className="m-lang">
+        <span className="m-lang-lb">{t("lang.label")}</span>
+        <div className="m-lang-seg">
+          <button className={getLang() === "en" ? "on" : ""} onClick={() => setLang("en")}>English</button>
+          <button className={getLang() === "bn" ? "on" : ""} onClick={() => setLang("bn")}>বাংলা</button>
+        </div>
+      </div>
       <div className="m-menu">
-        <button onClick={onWrapped}><span className="mm-ic" style={{ color: "#fff", background: "linear-gradient(135deg,#8b5cf6,#0ea372)" }}><Sparkles size={20} /></span><span className="mm-txt"><b>Taka Wrapped</b><i>Your month in money — animated &amp; shareable</i></span><ChevronRight size={18} /></button>
-        <button onClick={onReview}><span className="mm-ic" style={{ color: "#0891b2", background: "#e9f5fa" }}><MessageSquareText size={20} /></span><span className="mm-txt"><b>Review SMS{pendN ? ` (${pendN})` : ""}</b><i>Confirm transactions spotted in your texts</i></span><ChevronRight size={18} /></button>
-        <button onClick={onRecurring}><span className="mm-ic" style={{ color: "#f59f0a", background: "#fff5e0" }}><CalendarClock size={20} /></span><span className="mm-txt"><b>Recurring &amp; bills</b><i>Salary, rent, EMIs — auto-post and remind</i></span><ChevronRight size={18} /></button>
-        <button onClick={onZakat}><span className="mm-ic" style={{ color: "#10b981", background: "#eefaf4" }}><Moon size={20} /></span><span className="mm-txt"><b>Zakat calculator</b><i>2.5% of zakatable wealth above nisab</i></span><ChevronRight size={18} /></button>
-        <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>Export my data</b><i>Download everything as JSON (backup)</i></span><ChevronRight size={18} /></button>
-        <label className="mm-file"><span className="mm-ic" style={{ color: "#0891b2" }}><UploadCloud size={20} /></span><span className="mm-txt"><b>Restore from backup</b><i>Load a previously exported JSON file</i></span><ChevronRight size={18} /><input type="file" accept="application/json,.json" style={{ display: "none" }} onChange={restore} /></label>
-        <button onClick={onSync}><span className="mm-ic" style={{ color: "#2563eb", background: "#eaf1fe" }}><Cloud size={20} /></span><span className="mm-txt"><b>Cloud sync &amp; backup</b><i>Sync across devices (needs one-time setup)</i></span><ChevronRight size={18} /></button>
-        <button onClick={onAdmin}><span className="mm-ic" style={{ color: "#0ea372" }}><Landmark size={20} /></span><span className="mm-txt"><b>Rate sources (admin)</b><i>Manage bank rate links shown in the marketplace</i></span><ChevronRight size={18} /></button>
-        <button onClick={onSample}><span className="mm-ic" style={{ color: "#8b5cf6", background: "#f3f0fb" }}><Sparkles size={20} /></span><span className="mm-txt"><b>Load sample data</b><i>Explore the app with example numbers</i></span><ChevronRight size={18} /></button>
-        <button onClick={clear}><span className="mm-ic" style={{ color: "#fa5a7d", background: "#fef0f3" }}><Trash2 size={20} /></span><span className="mm-txt"><b>Clear all data</b><i>Erase everything and start fresh</i></span><ChevronRight size={18} /></button>
-        <button onClick={onSignOut}><span className="mm-ic" style={{ color: "#fa5a7d" }}><LogOut size={20} /></span><span className="mm-txt"><b>Sign out</b></span><ChevronRight size={18} /></button>
+        <button onClick={onWrapped}><span className="mm-ic" style={{ color: "#fff", background: "linear-gradient(135deg,#8b5cf6,#0ea372)" }}><Sparkles size={20} /></span><span className="mm-txt"><b>{t("more.wrapped.t")}</b><i>{t("more.wrapped.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={onReview}><span className="mm-ic" style={{ color: "#0891b2", background: "#e9f5fa" }}><MessageSquareText size={20} /></span><span className="mm-txt"><b>{t("more.review.t")}{pendN ? ` (${pendN})` : ""}</b><i>{t("more.review.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={onRecurring}><span className="mm-ic" style={{ color: "#f59f0a", background: "#fff5e0" }}><CalendarClock size={20} /></span><span className="mm-txt"><b>{t("more.recurring.t")}</b><i>{t("more.recurring.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={onZakat}><span className="mm-ic" style={{ color: "#10b981", background: "#eefaf4" }}><Moon size={20} /></span><span className="mm-txt"><b>{t("more.zakat.t")}</b><i>{t("more.zakat.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={exportData}><span className="mm-ic" style={{ color: "#0891b2" }}><Download size={20} /></span><span className="mm-txt"><b>{t("more.export.t")}</b><i>{t("more.export.s")}</i></span><ChevronRight size={18} /></button>
+        <label className="mm-file"><span className="mm-ic" style={{ color: "#0891b2" }}><UploadCloud size={20} /></span><span className="mm-txt"><b>{t("more.restore.t")}</b><i>{t("more.restore.s")}</i></span><ChevronRight size={18} /><input type="file" accept="application/json,.json" style={{ display: "none" }} onChange={restore} /></label>
+        <button onClick={onSync}><span className="mm-ic" style={{ color: "#2563eb", background: "#eaf1fe" }}><Cloud size={20} /></span><span className="mm-txt"><b>{t("more.sync.t")}</b><i>{t("more.sync.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={onAdmin}><span className="mm-ic" style={{ color: "#0ea372" }}><Landmark size={20} /></span><span className="mm-txt"><b>{t("more.rates.t")}</b><i>{t("more.rates.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={onSample}><span className="mm-ic" style={{ color: "#8b5cf6", background: "#f3f0fb" }}><Sparkles size={20} /></span><span className="mm-txt"><b>{t("more.sample.t")}</b><i>{t("more.sample.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={clear}><span className="mm-ic" style={{ color: "#fa5a7d", background: "#fef0f3" }}><Trash2 size={20} /></span><span className="mm-txt"><b>{t("more.clear.t")}</b><i>{t("more.clear.s")}</i></span><ChevronRight size={18} /></button>
+        <button onClick={onSignOut}><span className="mm-ic" style={{ color: "#fa5a7d" }}><LogOut size={20} /></span><span className="mm-txt"><b>{t("more.signout.t")}</b></span><ChevronRight size={18} /></button>
       </div>
       <p className="m-note">One app: log income, spending, wallets, loans and goals the simple way — the Plan tab turns it all into net worth, budgets, tax, projections and live loan/deposit rates automatically. Your data stays in this browser; there's no bank auto-sync (Bangladesh has no open-banking feed yet), which also keeps it fully private to you. Export a backup now and then so you don't lose it.</p>
     </div>
