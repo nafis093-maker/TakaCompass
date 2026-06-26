@@ -1,6 +1,8 @@
-import React, { useState } from "react";
-import { X, Check, Repeat, Paperclip } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Check, Repeat, Paperclip, Mic } from "lucide-react";
 import { EXPENSE_CATS, INCOME_CATS, uid, today, niceDate } from "./lib.js";
+import { voiceAvailable, listenOnce } from "./voice.js";
+import { parseSpeech } from "./voiceparse.js";
 
 export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }) {
   const [type, setType] = useState(initial?.type || "expense");
@@ -12,6 +14,26 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
   const [note, setNote] = useState(initial?.note || "");
   const [repeat, setRepeat] = useState("none");
   const [receipt, setReceipt] = useState(initial?.receipt || "");
+  const [canVoice, setCanVoice] = useState(false);
+  const [voice, setVoice] = useState("idle"); // idle | listening | error
+  const [heard, setHeard] = useState("");
+
+  useEffect(() => { voiceAvailable().then(setCanVoice); }, []);
+
+  const speak = async () => {
+    setHeard(""); setVoice("listening");
+    try {
+      const transcript = await listenOnce();
+      setHeard(transcript);
+      const p = parseSpeech(transcript);
+      if (!p) { setVoice("error"); return; }
+      setType(p.type);
+      setAmount(p.amount);
+      setCategory(p.category);
+      if (p.note) setNote(p.note);
+      setVoice("idle");
+    } catch { setVoice("error"); }
+  };
 
   const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
   const canSave = amount > 0 && (type !== "transfer" || walletId !== toWalletId);
@@ -58,6 +80,18 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
           <input autoFocus inputMode="numeric" value={amount || ""} placeholder="0"
             onChange={(e) => setAmount(parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} />
         </div>
+
+        {!initial && canVoice && (
+          <div className="vc-wrap">
+            <button className={"vc-btn" + (voice === "listening" ? " on" : "")} onClick={speak} disabled={voice === "listening"}>
+              <Mic size={16} /> {voice === "listening" ? "Listening…" : "Speak to fill"}
+            </button>
+            {voice === "listening" && <span className="vc-pulse"><i /><i /><i /></span>}
+            {heard && voice !== "listening" && <span className="vc-heard">“{heard}”</span>}
+            {voice === "error" && !heard && <span className="vc-err">Didn't catch that — try “spent 200 on lunch”.</span>}
+            {voice === "error" && heard && <span className="vc-err">No amount heard — try again.</span>}
+          </div>
+        )}
 
         {!initial && (
           <div className="qa-amts">

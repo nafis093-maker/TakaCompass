@@ -49,6 +49,10 @@
 	<string>Take a photo of a receipt to attach it to a transaction.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Attach a receipt image from your photo library to a transaction.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Use the microphone to add a transaction by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Convert your speech to text to fill in a transaction.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

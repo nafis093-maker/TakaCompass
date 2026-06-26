@@ -29,8 +29,8 @@ export function guessCategory(low, who, type) {
   }
   if (/wtax|\bvat\b|excise|\bduty\b|ac mnt|mnt fee|maintenance|yrly ac|service charge|\bcharge\b|scheme fee|stamp/.test(w)) return "bills";
   if (/card pymt|card payment|\bpos\b|visa|mastercard/.test(w)) return "shopping";
-  if (/restaurant|food|cafe|kfc|pizza|burger|foodpanda|hungrynaki|dine/.test(w)) return "food";
-  if (/grocery|super ?shop|agora|meena|shwapno|unimart|daily/.test(w)) return "groceries";
+  if (/restaurant|food|cafe|kfc|pizza|burger|foodpanda|hungrynaki|dine|lunch|dinner|breakfast|meal|snack|coffee|tea\b/.test(w)) return "food";
+  if (/grocer|super ?shop|agora|meena|shwapno|unimart|daily|bazar|bazaar/.test(w)) return "groceries";
   if (/fuel|petrol|octane|cng|filling/.test(w)) return "transport";
   if (/uber|pathao|obhai|ride|bus|train|rail|air|flight/.test(w)) return "transport";
   if (/electric|desco|dpdc|wasa|gas|titas|water|internet|isp|wifi|broadband|bill/.test(w)) return "bills";
