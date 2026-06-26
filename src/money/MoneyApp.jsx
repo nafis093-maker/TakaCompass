@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
   Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark, Upload,
-  CalendarClock, Moon, UploadCloud, Search, Bell, Cloud,
+  CalendarClock, Moon, UploadCloud, Search, Bell, Cloud, Mic,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
@@ -19,8 +19,11 @@ import Zakat from "./Zakat.jsx";
 import Wrapped from "./Wrapped.jsx";
 import Sync from "./Sync.jsx";
 import Review from "./Review.jsx";
+import VoiceQuickAdd from "./VoiceQuickAdd.jsx";
 import Plan from "./Plan.jsx";
 import { CountUp } from "./anim.jsx";
+import { voiceAvailable } from "./voice.js";
+import { warmTts } from "./tts.js";
 import { syncConfigured, pull as syncPull, push as syncPush, loadMeta as loadSyncMeta, saveMeta as saveSyncMeta } from "./sync.js";
 import { derive } from "./derive.js";
 import { buildInsights } from "./planlib.js";
@@ -51,6 +54,9 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   const [wrappedOpen, setWrappedOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [canVoice, setCanVoice] = useState(false);
+  useEffect(() => { voiceAvailable().then(setCanVoice); }, []);
   const [editPendId, setEditPendId] = useState(null);
 
   const fp = (parsed) => txnFingerprint(parsed);
@@ -266,9 +272,14 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
       {tab === "timeline" && (
         <button className="m-fab" onClick={() => { setEditing(null); setAdding(true); }} aria-label="Add transaction"><Plus size={26} strokeWidth={2.6} /></button>
       )}
+      {tab === "timeline" && canVoice && (
+        <button className="m-fab-mic" onClick={() => { warmTts(); setVoiceOpen(true); }} aria-label="Add by voice" title="Add by voice"><Mic size={24} strokeWidth={2.4} /></button>
+      )}
       <button className={"m-fab2" + (tab === "timeline" ? " stacked" : "")} onClick={() => setUploading(true)} aria-label="Upload bank statement" title="Upload statement">
         <Upload size={20} strokeWidth={2.4} />
       </button>
+
+      {voiceOpen && <VoiceQuickAdd onClose={() => setVoiceOpen(false)} onDone={(p) => { setVoiceOpen(false); setEditing({ type: p.type, amount: p.amount, category: p.category, walletId: wallets[0]?.id, date: today(), note: p.note }); setAdding(true); }} />}
 
       {toast && <div className="m-toast">{toast}</div>}
 
