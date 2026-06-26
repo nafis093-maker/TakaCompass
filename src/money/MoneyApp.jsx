@@ -272,8 +272,8 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
       {tab === "timeline" && (
         <button className="m-fab" onClick={() => { setEditing(null); setAdding(true); }} aria-label="Add transaction"><Plus size={26} strokeWidth={2.6} /></button>
       )}
-      {tab === "timeline" && canVoice && (
-        <button className="m-fab-mic" onClick={() => { warmTts(); setVoiceOpen(true); }} aria-label="Add by voice" title="Add by voice"><Mic size={24} strokeWidth={2.4} /></button>
+      {tab === "timeline" && (
+        <button className="m-fab-mic" onClick={() => { warmTts(); setVoiceOpen(true); }} aria-label="Quick add by voice or text" title="Quick add"><Mic size={24} strokeWidth={2.4} /></button>
       )}
       <button className={"m-fab2" + (tab === "timeline" ? " stacked" : "")} onClick={() => setUploading(true)} aria-label="Upload bank statement" title="Upload statement">
         <Upload size={20} strokeWidth={2.4} />

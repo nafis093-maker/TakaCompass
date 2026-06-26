@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Mic, X, ChevronRight } from "lucide-react";
-import { listenOnce } from "./voice.js";
+import { Mic, X, ChevronRight, Keyboard } from "lucide-react";
+import { listenOnce, voiceAvailable, webSpeechAvailable } from "./voice.js";
+import { isNative } from "./native.js";
 import { parseSpeech } from "./voiceparse.js";
 import { speak } from "./tts.js";
 import { tk, catOf } from "./lib.js";
@@ -8,7 +9,10 @@ import { tk, catOf } from "./lib.js";
 const EXAMPLES = ["spent 200 on lunch", "got 5,000 salary", "1500 electricity bill", "uber 350"];
 
 export default function VoiceQuickAdd({ onDone, onClose }) {
-  const [phase, setPhase] = useState("welcome"); // welcome | listening | thanks | error
+  // Speech recognition doesn't exist in iPhone browsers (all use WebKit) or in
+  // Firefox. Fall back to typing the same plain-language phrase there.
+  const [mode] = useState(() => (isNative() || webSpeechAvailable()) ? "voice" : "type");
+  const [phase, setPhase] = useState(mode === "type" ? "type" : "welcome"); // welcome | listening | thanks | error | type
   const [heard, setHeard] = useState("");
   const [parsed, setParsed] = useState(null);
   const [errMsg, setErrMsg] = useState("");
@@ -19,7 +23,7 @@ export default function VoiceQuickAdd({ onDone, onClose }) {
   // Speak the prompt while the welcome page is up, so recognition itself can be
   // started straight from the Start tap (a fresh user gesture) without the TTS
   // audio overlapping it - that overlap/gesture-loss is what caused 'aborted'.
-  useEffect(() => { speak("Say your amount now"); }, []);
+  useEffect(() => { if (mode === "voice") speak("Say your amount now"); }, [mode]);
 
   const finishWith = async (p) => {
     setParsed(p); setPhase("thanks");
@@ -62,6 +66,26 @@ export default function VoiceQuickAdd({ onDone, onClose }) {
   };
 
   const c = parsed ? catOf(parsed.category) : null;
+
+  // ---- Type mode (iPhone browsers / Firefox: no speech recognition) ----
+  if (phase === "type") {
+    return (
+      <div className="vq-overlay welcome">
+        <button className="vq-close" onClick={onClose}><X size={22} /></button>
+        <div className="vq-orb welcome" style={{ marginBottom: 22 }}><Keyboard size={42} /></div>
+        <div className="vq-title">Quick add</div>
+        <div className="vq-sub">Type it in plain words:</div>
+        <div className="vq-examples">{EXAMPLES.map((e) => <span key={e} className="vq-ex">{e}</span>)}</div>
+        <div className="vq-type" style={{ marginTop: 8 }}>
+          <input autoFocus value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="spent 200 on lunch"
+            onKeyDown={(e) => { if (e.key === "Enter") submitTyped(); }} />
+          <button onClick={submitTyped}>Add</button>
+        </div>
+        {typeErr && <div className="vq-tip" style={{ color: "#ffe0a3" }}>{typeErr}</div>}
+        <div className="vq-tip">Speaking isn't available in iPhone browsers - the installed app supports voice.</div>
+      </div>
+    );
+  }
 
   if (phase === "welcome") {
     return (
