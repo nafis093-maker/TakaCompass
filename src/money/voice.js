@@ -34,29 +34,21 @@ export async function listenOnce({ lang = "en-US" } = {}) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; }
 
-  // Make sure the spoken prompt isn't still holding the audio output.
+  // Release the spoken-prompt audio so it doesn't fight the recognizer.
   try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
-
-  // Ask for mic permission first — this gives a precise error and warms the mic
-  // so recognition doesn't abort the instant it starts.
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-      s.getTracks().forEach((t) => t.stop());
-    } catch { const e = new Error("mic blocked"); e.code = "not-allowed"; throw e; }
-  }
-  await new Promise((r) => setTimeout(r, 250));
+  await new Promise((r) => setTimeout(r, 300));
 
   return await new Promise((resolve, reject) => {
-    let r;
-    try { r = new SR(); } catch { const e = new Error("init"); e.code = "no-start"; return reject(e); }
+    let r, settled = false, gotAudio = false, timer;
+    const finish = (fn, arg) => { if (settled) return; settled = true; clearTimeout(timer); try { r && r.abort && r.abort(); } catch {} fn(arg); };
+    const fail = (code) => { const e = new Error(code); e.code = code; finish(reject, e); };
+    try { r = new SR(); } catch { return fail("no-start"); }
     r.lang = lang; r.interimResults = false; r.maxAlternatives = 1; r.continuous = false;
-    let done = false, gotAudio = false;
-    const fail = (code) => { if (!done) { done = true; const e = new Error(code); e.code = code; reject(e); } };
     r.onaudiostart = () => { gotAudio = true; };
-    r.onresult = (e) => { done = true; resolve((e.results[0][0].transcript || "").trim()); };
-    r.onerror = (e) => fail(e.error === "not-allowed" || e.error === "service-not-allowed" ? "not-allowed" : e.error || "error");
-    r.onend = () => fail(gotAudio ? "no-speech" : "no-start");
+    r.onresult = (e) => finish(resolve, (e.results[0][0].transcript || "").trim());
+    r.onerror = (e) => { const er = e.error; fail(er === "not-allowed" || er === "service-not-allowed" ? "not-allowed" : er === "audio-capture" ? "no-mic" : er === "network" ? "network" : er || "error"); };
+    r.onend = () => { if (!settled) fail(gotAudio ? "no-speech" : "no-start"); };
+    timer = setTimeout(() => fail("timeout"), 12000);
     try { r.start(); } catch { fail("no-start"); }
   });
 }

@@ -17,7 +17,7 @@ export function speak(text, { lang = "en-US", rate = 1 } = {}) {
       const fin = () => { if (!done) { done = true; resolve(); } };
       u.onend = fin; u.onerror = fin;
       synth.speak(u);
-      setTimeout(fin, 5000); // safety net
+      setTimeout(fin, 3000); // safety net
     } catch { resolve(); }
   });
 }

@@ -22,13 +22,15 @@ export default function VoiceQuickAdd({ onDone, onClose }) {
     try {
       transcript = await listenOnce();
     } catch (e) {
-      const code = e && e.code;
-      setErrMsg(
-        code === "not-allowed" ? "Microphone is blocked. Allow mic access for this site, then try again."
-        : code === "unavailable" ? "Voice isn't supported in this browser — try Chrome, or type it in."
-        : (code === "no-speech" || code === "no-start") ? "I didn't hear anything. Tap Try again and speak right after the prompt."
-        : "Couldn't start the microphone. Try again."
-      );
+      const code = (e && e.code) || "error";
+      const msg =
+        code === "not-allowed" ? "Microphone is blocked. Click the lock/camera icon in the address bar, set Microphone to Allow, then Try again."
+        : code === "unavailable" ? "Speech recognition isn't available here — use Chrome or Edge (Safari/Firefox don't support it on the web)."
+        : code === "no-mic" ? "No microphone was found on this device."
+        : code === "network" ? "Speech needs internet and isn't reachable right now."
+        : (code === "no-speech" || code === "timeout") ? "I didn't hear anything — Try again and speak right after the prompt."
+        : "Couldn't start the microphone — Try again.";
+      setErrMsg(msg + `  (${code})`);
       setPhase("error"); busy.current = false; return;
     }
     setHeard(transcript);
