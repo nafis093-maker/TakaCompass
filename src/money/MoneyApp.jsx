@@ -124,6 +124,33 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   // Keep device reminders in sync with upcoming bills (native only).
   useEffect(() => { if (isNative()) scheduleReminders(upcoming(data.recurring, 31)); }, [data.recurring]);
 
+  // Receive shared text (iOS Shortcuts / share sheet, or any takacompass://add link)
+  // → parse → drop into the review queue. Works on iOS where SMS can't be read.
+  useEffect(() => {
+    if (!isNative()) return;
+    let sub;
+    const handle = (url) => {
+      if (!url) return;
+      let text = "";
+      try { const u = new URL(url); if (u.host === "add" || /(^|\/)add/.test(u.pathname)) text = u.searchParams.get("text") || ""; }
+      catch { const m = /[?&]text=([^&]+)/.exec(url); if (m) text = decodeURIComponent(m[1]); }
+      if (!text) return;
+      const p = parseOne(text);
+      if (!p || !(p.amount > 0)) { setToast("Couldn't find a transaction in that message"); return; }
+      enqueueOne(text);
+      setReviewOpen(true);
+      setToast("Added to review from share");
+    };
+    (async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        try { const l = await App.getLaunchUrl(); if (l && l.url) handle(l.url); } catch {}
+        sub = await App.addListener("appUrlOpen", (e) => handle(e.url));
+      } catch {}
+    })();
+    return () => { if (sub && sub.remove) sub.remove(); };
+  }, []);
+
   // Opt-in cloud auto-sync: pull on open if remote is newer, push on change.
   const syncTimer = useRef(null);
   useEffect(() => {

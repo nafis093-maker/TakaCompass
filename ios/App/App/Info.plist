@@ -49,5 +49,16 @@
 	<string>Take a photo of a receipt to attach it to a transaction.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Attach a receipt image from your photo library to a transaction.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.takacompass.money</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>takacompass</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
