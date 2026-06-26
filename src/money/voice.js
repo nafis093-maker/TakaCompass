@@ -17,27 +17,46 @@ export async function voiceAvailable() {
   return webSpeechAvailable();
 }
 
-// Listen once and resolve with the best transcript string. Throws on error.
+// Listen once and resolve with the best transcript string. Throws on error
+// with an `.code` (not-allowed | unavailable | no-speech | no-start | error).
 export async function listenOnce({ lang = "en-US" } = {}) {
   if (isNative()) {
     const SR = await nativeSR();
-    if (!SR) throw new Error("unavailable");
-    try { const a = await SR.available(); if (a && a.available === false) throw new Error("unavailable"); } catch {}
+    if (!SR) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; }
+    try { const a = await SR.available(); if (a && a.available === false) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; } } catch {}
     const perm = await SR.requestPermissions().catch(() => null);
-    if (perm && perm.speechRecognition && perm.speechRecognition !== "granted") throw new Error("denied");
+    if (perm && perm.speechRecognition && perm.speechRecognition !== "granted") { const e = new Error("denied"); e.code = "not-allowed"; throw e; }
     const res = await SR.start({ language: lang, maxResults: 1, partialResults: false, popup: false });
     const matches = (res && res.matches) || [];
     return matches[0] || "";
   }
+
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) throw new Error("unavailable");
+  if (!SR) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; }
+
+  // Make sure the spoken prompt isn't still holding the audio output.
+  try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
+
+  // Ask for mic permission first — this gives a precise error and warms the mic
+  // so recognition doesn't abort the instant it starts.
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach((t) => t.stop());
+    } catch { const e = new Error("mic blocked"); e.code = "not-allowed"; throw e; }
+  }
+  await new Promise((r) => setTimeout(r, 250));
+
   return await new Promise((resolve, reject) => {
-    const r = new SR();
+    let r;
+    try { r = new SR(); } catch { const e = new Error("init"); e.code = "no-start"; return reject(e); }
     r.lang = lang; r.interimResults = false; r.maxAlternatives = 1; r.continuous = false;
-    let done = false;
-    r.onresult = (e) => { done = true; resolve(e.results[0][0].transcript || ""); };
-    r.onerror = (e) => { if (!done) reject(new Error(e.error || "speech-error")); };
-    r.onend = () => { if (!done) reject(new Error("no-speech")); };
-    try { r.start(); } catch (e) { reject(e); }
+    let done = false, gotAudio = false;
+    const fail = (code) => { if (!done) { done = true; const e = new Error(code); e.code = code; reject(e); } };
+    r.onaudiostart = () => { gotAudio = true; };
+    r.onresult = (e) => { done = true; resolve((e.results[0][0].transcript || "").trim()); };
+    r.onerror = (e) => fail(e.error === "not-allowed" || e.error === "service-not-allowed" ? "not-allowed" : e.error || "error");
+    r.onend = () => fail(gotAudio ? "no-speech" : "no-start");
+    try { r.start(); } catch { fail("no-start"); }
   });
 }
