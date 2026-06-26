@@ -582,3 +582,20 @@
 .vq-actions { display: flex; gap: 10px; margin-top: 22px; }
 .vq-retry { background: #fff; color: #0ea372; border: none; border-radius: 999px; padding: 12px 22px; font-weight: 800; font-size: 15px; cursor: pointer; }
 .vq-cancel { background: rgba(255,255,255,.2); color: #fff; border: none; border-radius: 999px; padding: 12px 22px; font-weight: 800; font-size: 15px; cursor: pointer; }
+
+/* ---- voice welcome page ---- */
+.vq-overlay.welcome { background: linear-gradient(165deg, #8b5cf6 0%, #0ea372 90%); }
+.vq-rings { position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; margin-bottom: 26px; }
+.vq-rings span { position: absolute; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); inset: 0; animation: vq-ring 2.6s ease-out infinite; }
+.vq-rings span:nth-child(2) { animation-delay: .8s; } .vq-rings span:nth-child(3) { animation-delay: 1.6s; }
+@keyframes vq-ring { 0% { transform: scale(.55); opacity: .8; } 100% { transform: scale(1.25); opacity: 0; } }
+.vq-orb.welcome { position: relative; width: 96px; height: 96px; margin: 0; background: rgba(255,255,255,.22); animation: vq-float 3.4s ease-in-out infinite; }
+@keyframes vq-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@media (prefers-reduced-motion: reduce) { .vq-rings span, .vq-orb.welcome { animation: none; } }
+.vq-title { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+.vq-sub { font-size: 15px; opacity: .92; margin-top: 8px; }
+.vq-examples { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px 0 26px; max-width: 320px; }
+.vq-ex { font-size: 13px; font-weight: 600; background: rgba(255,255,255,.18); border-radius: 999px; padding: 7px 13px; }
+.vq-start { display: inline-flex; align-items: center; gap: 8px; background: #fff; color: #0ea372; border: none; border-radius: 999px; padding: 15px 30px; font-weight: 800; font-size: 17px; cursor: pointer; box-shadow: 0 14px 30px -12px rgba(0,0,0,.4); }
+.vq-start:active { transform: scale(.96); }
+.vq-tip { font-size: 12.5px; opacity: .8; margin-top: 18px; max-width: 280px; line-height: 1.4; }

@@ -18,27 +18,33 @@ export async function voiceAvailable() {
 }
 
 // Listen once and resolve with the best transcript string. Throws on error
-// with an `.code` (not-allowed | unavailable | no-speech | no-start | error).
-export async function listenOnce({ lang = "en-US" } = {}) {
+// with an `.code` (not-allowed | unavailable | no-speech | no-start | aborted | timeout | network | no-mic).
+export async function listenOnce(opts = {}) {
   if (isNative()) {
     const SR = await nativeSR();
     if (!SR) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; }
     try { const a = await SR.available(); if (a && a.available === false) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; } } catch {}
     const perm = await SR.requestPermissions().catch(() => null);
     if (perm && perm.speechRecognition && perm.speechRecognition !== "granted") { const e = new Error("denied"); e.code = "not-allowed"; throw e; }
-    const res = await SR.start({ language: lang, maxResults: 1, partialResults: false, popup: false });
+    const res = await SR.start({ language: opts.lang || "en-US", maxResults: 1, partialResults: false, popup: false });
     const matches = (res && res.matches) || [];
     return matches[0] || "";
   }
 
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; }
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 300 + attempt * 350));
+    try { return await listenWeb(opts, attempt); }
+    catch (e) { lastErr = e; if (e.code === "aborted" || e.code === "no-start") continue; throw e; }
+  }
+  throw lastErr;
+}
 
-  // Release the spoken-prompt audio so it doesn't fight the recognizer.
-  try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
-  await new Promise((r) => setTimeout(r, 300));
-
-  return await new Promise((resolve, reject) => {
+function listenWeb({ lang = "en-US" } = {}, attempt = 0) {
+  return new Promise((resolve, reject) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { const e = new Error("unavailable"); e.code = "unavailable"; return reject(e); }
+    if (attempt === 0) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {} }
     let r, settled = false, gotAudio = false, timer;
     const finish = (fn, arg) => { if (settled) return; settled = true; clearTimeout(timer); try { r && r.abort && r.abort(); } catch {} fn(arg); };
     const fail = (code) => { const e = new Error(code); e.code = code; finish(reject, e); };
