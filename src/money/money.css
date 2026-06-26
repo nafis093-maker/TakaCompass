@@ -619,3 +619,25 @@
 .wel-cta { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #fff; color: #0a6e52; border: none; border-radius: 999px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 14px 30px -14px rgba(0,0,0,.5); }
 .wel-cta:active { transform: scale(.98); }
 .wel-note { text-align: center; font-size: 12.5px; opacity: .82; margin: -10px 0 0; }
+
+/* ---- post-login welcome splash ---- */
+.ws { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: radial-gradient(120% 90% at 50% 30%, #16b888 0%, #0ea372 40%, #0a6e52 100%); color: #fff;
+  opacity: 1; transition: opacity .5s ease; }
+.ws.leave { opacity: 0; }
+.ws-stage { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.ws-logo { width: 104px; height: 104px; border-radius: 30px; background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center;
+  animation: ws-pop .9s cubic-bezier(.18,1.4,.4,1) both; box-shadow: 0 20px 50px -18px rgba(0,0,0,.5); }
+@keyframes ws-pop { 0% { transform: scale(0) rotate(-40deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.ws-rings span { position: absolute; top: 50%; left: 50%; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 32px;
+  border: 2px solid rgba(255,255,255,.4); animation: ws-ring 1.9s ease-out infinite; opacity: 0; }
+.ws-rings span:nth-child(1) { animation-delay: .7s; }
+.ws-rings span:nth-child(2) { animation-delay: 1.2s; }
+.ws-rings span:nth-child(3) { animation-delay: 1.7s; }
+@keyframes ws-ring { 0% { transform: scale(.7); opacity: .7; } 100% { transform: scale(1.9); opacity: 0; } }
+.ws-hi { font-size: 30px; font-weight: 800; letter-spacing: -.03em; opacity: 0; animation: ws-rise .7s ease-out .55s both; }
+.ws-sub { font-size: 15px; opacity: 0; animation: ws-rise .7s ease-out .8s both; }
+@keyframes ws-rise { 0% { transform: translateY(14px); opacity: 0; } 100% { transform: translateY(0); opacity: .92; } }
+@media (prefers-reduced-motion: reduce) {
+  .ws-logo, .ws-hi, .ws-sub { animation: none; opacity: 1; } .ws-hi, .ws-sub { transform: none; } .ws-rings span { display: none; }
+}
