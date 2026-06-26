@@ -653,3 +653,36 @@
 .wel-langbar button, .login-langbar button { color: rgba(255,255,255,.8); }
 .wel-langbar button.on, .login-langbar button.on { background: #fff; color: #0a6e52; }
 .login-langbar { margin: 0 auto 14px; }
+
+/* ===== Mintro-inspired refresh ===== */
+.m-head { margin-bottom: 16px; }
+.m-greet { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; color: var(--tx); margin: 6px 2px 12px; }
+.m-wave { display: inline-block; }
+.m-headcard { background: linear-gradient(158deg, #e8faf2 0%, #ffffff 62%); border: 1px solid #e7f1ec; border-radius: 22px; padding: 16px 18px; box-shadow: 0 14px 34px -26px rgba(16, 60, 44, 0.55); }
+.m-headtop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.m-headlbl { font-size: 13px; color: var(--mut); font-weight: 600; }
+.m-pill { font-size: 12px; font-weight: 800; color: #0a7d5c; background: #d6f3e6; border-radius: 999px; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+.m-headcard .m-bignum { font-size: 34px; line-height: 1.1; }
+.m-headcard .m-sublabel { margin-top: 3px; }
+
+/* spending card + category rows */
+.m-spendcard { display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 18px 16px; box-shadow: 0 14px 34px -28px rgba(16, 60, 44, 0.55); margin-top: 4px; }
+.m-spendcard > svg { align-self: center; max-width: 210px; height: auto; }
+.m-catlist { width: 100%; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.m-catrow { display: flex; align-items: center; gap: 12px; padding: 9px 4px; cursor: pointer; border-radius: 12px; transition: background 0.12s; }
+.m-catrow:active { background: #f6f8f7; }
+.m-catic { width: 40px; height: 40px; flex: none; border-radius: 13px; display: flex; align-items: center; justify-content: center; }
+.m-catmeta { flex: 1; min-width: 0; }
+.m-catname { font-size: 14.5px; font-weight: 700; color: var(--tx); }
+.m-catsub { font-size: 13px; color: var(--mut); font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.m-catpct { font-size: 14px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* softer transaction rows + grouped card */
+.m-group { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 4px 12px 8px; margin-top: 12px; box-shadow: 0 10px 28px -26px rgba(16, 60, 44, 0.5); }
+.m-grouphd { border-bottom: 1px solid var(--line); }
+.m-txn { border-top: none; }
+.m-txn + .m-txn { border-top: 1px solid var(--line); }
+.m-txic { border-radius: 13px; }
+
+/* rounded hero + insight cards */
+.m-hero, .pcard { border-radius: 20px; }

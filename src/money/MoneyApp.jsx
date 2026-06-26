@@ -264,7 +264,7 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   return (
     <div className="m-app">
       <div className="m-screen">
-        {tab === "timeline" && <Timeline data={data} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} openWrapped={() => setWrappedOpen(true)} openReview={() => setReviewOpen(true)} />}
+        {tab === "timeline" && <Timeline data={data} userName={user.name} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} openWrapped={() => setWrappedOpen(true)} openReview={() => setReviewOpen(true)} />}
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
         {tab === "plan" && <Plan data={data} addGoal={addGoal} delGoal={delGoal} />}
@@ -303,8 +303,11 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
   );
 }
 
-function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring, openWrapped, openReview }) {
+function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring, openWrapped, openReview }) {
   const { txns, wallets, recurring = [], pending = [] } = data;
+  const first = (userName || "").trim().split(/\s+/)[0];
+  const hour = new Date().getHours();
+  const greetWord = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const mk = today().slice(0, 7);
   const month = txns.filter((t) => monthKey(t.date) === mk);
   const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
@@ -349,9 +352,15 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
   return (
     <div className="scr">
       <div className="m-head">
-        <div className="m-bignum"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
-        <div className="m-sublabel">Total wealth · {tk(spent)} spent in {monthLabel(mk)}</div>
-        {spent > 0 && <button className="wr-pill" onClick={openWrapped}>✨ See your {monthLabel(mk)} Wrapped</button>}
+        <div className="m-greet">{greetWord}{first ? ", " + first : ""} <span className="m-wave">👋</span></div>
+        <div className="m-headcard">
+          <div className="m-headtop">
+            <span className="m-headlbl">Total wealth</span>
+            <span className="m-pill" onClick={openWrapped} role="button">{monthLabel(mk)} ↗</span>
+          </div>
+          <div className="m-bignum"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
+          <div className="m-sublabel">{tk(spent)} spent in {monthLabel(mk)}</div>
+        </div>
       </div>
 
       {pending.length > 0 && (
@@ -381,11 +390,18 @@ function Timeline({ data, onEdit, goPlan, openImport, openUpload, openAdd, onAdd
       {seg === "spend" && (
         cats.length > 0 ? (
           <>
-            <div className="m-spendov">
+            <div className="m-spendcard">
               <Donut slices={cats} centerLabel={big(spent)} />
-              <div className="m-spendleg">
+              <div className="m-catlist">
                 {cats.slice(0, 5).map((c) => (
-                  <div key={c.key}><span className="sl-dot" style={{ background: c.color }} /><span className="sl-name">{c.label}</span><b>{Math.round(c.pct)}%</b></div>
+                  <div key={c.key} className="m-catrow" onClick={goPlan}>
+                    <span className="m-catic" style={{ background: c.color + "1f", color: c.color }}><c.Icon size={19} strokeWidth={2.2} /></span>
+                    <div className="m-catmeta">
+                      <div className="m-catname">{c.label}</div>
+                      <div className="m-catsub">{tk(c.amount)}</div>
+                    </div>
+                    <div className="m-catpct">{Math.round(c.pct)}%</div>
+                  </div>
                 ))}
               </div>
             </div>
