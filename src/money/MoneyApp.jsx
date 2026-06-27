@@ -461,7 +461,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
           <div className="m-feat-hd"><span className="m-feat-icn spent"><CreditCard size={18} /></span><span className="m-feat-title">Spent</span><span className="m-feat-info"><Eye size={14} /></span></div>
           <div className="m-feat-row"><b>{big(spent)}</b>{prevExpense > 0 && <span className={"m-feat-tag " + (spendDelta <= 0 ? "good" : "bad")}>{spendDelta <= 0 ? "↓" : "↑"} {Math.abs(spendDelta)}%</span>}</div>
           <div className="m-feat-sub">Compared to last month</div>
-          <Sparkline data={spentSeries} color="#7c5cff" />
+          <Sparkline data={spentSeries} color="#3f8df0" />
         </div>
       </div>
 
