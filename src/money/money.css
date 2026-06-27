@@ -767,3 +767,16 @@
 
 /* ---- cleaner impact cards ---- */
 .m-statcard { background: #f7faf9; border: 1px solid #eef1f0; }
+
+/* ===== donut-centric hero (Option A) ===== */
+.m-donutcard { display: flex; flex-direction: column; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 16px 16px 18px; margin-bottom: 16px; box-shadow: 0 14px 34px -28px rgba(16,60,44,.55); }
+.m-dlbl { align-self: flex-start; font-size: 13px; color: var(--mut); font-weight: 600; }
+.m-donutcard .m-donut { width: 196px; height: 196px; margin: 2px 0; }
+.m-donutcard .m-dlabel { font-size: 15px; font-weight: 800; }
+.m-dlegend { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.m-dleg-row { display: flex; align-items: center; gap: 11px; cursor: pointer; }
+.m-dleg-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.m-dleg-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--tx); }
+.m-dleg-amt { font-size: 14.5px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; }
+.m-dempty { width: 100%; text-align: left; }
+.m-dempty .m-dash-big { font-size: 30px; font-weight: 900; letter-spacing: -.03em; color: #1b2430; margin-top: 2px; }

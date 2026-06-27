@@ -371,23 +371,26 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
         {spent > 0 && <button className="m-wrap-pill" onClick={openWrapped}>✨ Wrapped</button>}
       </div>
 
-      <div className="m-dash">
-        <div className="m-dash-left">
-          <div className="m-dash-lbl">Total Amount</div>
-          <div className="m-dash-big"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
-          <div className="m-dash-cats">
-            {(cats.length ? cats : [{ key: "none", label: "No spending yet", amount: 0, color: "#94a3b8", Icon: WalletIcon }]).slice(0, 3).map((c) => (
-              <div className="m-dash-cat" key={c.key} onClick={() => setSeg("spend")}>
-                <span className="m-catic" style={{ background: c.color + "1f", color: c.color }}><c.Icon size={18} strokeWidth={2.2} /></span>
-                <div><div className="m-dash-cname">{c.label}</div><div className="m-dash-camt">{c.amount ? big(c.amount) : "—"}</div></div>
-              </div>
-            ))}
-          </div>
-        </div>
-        {cats.length > 0 && (
-          <div className="m-dash-right">
-            <BigDonut slices={cats} />
-            <span className="m-bd-badge">🔥 {d.loggingStreak || 0} pts</span>
+      <div className="m-donutcard">
+        {cats.length > 0 ? (
+          <>
+            <div className="m-dlbl">Total Amount</div>
+            <Donut slices={cats} centerLabel={big(totalWealth(wallets, txns))} />
+            <div className="m-dlegend">
+              {cats.slice(0, 4).map((c) => (
+                <div key={c.key} className="m-dleg-row" onClick={() => setSeg("spend")}>
+                  <span className="m-dleg-dot" style={{ background: c.color }} />
+                  <span className="m-dleg-name">{c.label}</span>
+                  <span className="m-dleg-amt">{tk(c.amount)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="m-dempty">
+            <div className="m-dlbl">Total Amount</div>
+            <div className="m-dash-big"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
+            <p className="m-empty" style={{ margin: "6px 0 0" }}>Add a transaction to see your breakdown.</p>
           </div>
         )}
       </div>
