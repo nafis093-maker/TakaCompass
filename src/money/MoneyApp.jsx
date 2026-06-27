@@ -364,8 +364,11 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
   return (
     <div className="scr">
       <div className="m-hello">
-        <div className="m-hello-hi">Hello{first ? ", " + first : ""}</div>
-        <div className="m-hello-sub">Here's your money snapshot <span>😊</span></div>
+        <div>
+          <div className="m-hello-hi">Hello{first ? ", " + first : ""}</div>
+          <div className="m-hello-sub">Here's your money snapshot <span>😊</span></div>
+        </div>
+        {spent > 0 && <button className="m-wrap-pill" onClick={openWrapped}>✨ Wrapped</button>}
       </div>
 
       <div className="m-dash">

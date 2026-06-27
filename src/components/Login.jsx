@@ -30,8 +30,7 @@ export default function Login({ onLogin }) {
           <button className={getLang() === "en" ? "on" : ""} onClick={() => setLang("en")}>English</button>
           <button className={getLang() === "bn" ? "on" : ""} onClick={() => setLang("bn")}>বাংলা</button>
         </div>
-        <div className="brandmark">৳</div>
-        <h1 className="login-title">{t("app.name")}</h1>
+        <img src="/logo.png" alt="Hisab" className="login-logo" />
         <p className="login-sub">{t("login.sub")} 🇧🇩</p>
 
         <div className="login-btns">

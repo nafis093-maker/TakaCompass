@@ -20,7 +20,7 @@ export default function WelcomeSplash({ name, onDone }) {
     <div className={"ws" + (leaving ? " leave" : "")}>
       <div className="ws-stage">
         <div className="ws-rings"><span /><span /><span /></div>
-        <div className="ws-logo"><Compass size={50} strokeWidth={2.3} /></div>
+        <div className="ws-logo"><img src="/logo-mark.png" alt="" /></div>
       </div>
       <div className="ws-hi">{greet}</div>
       <div className="ws-sub">Let's make your taka count.</div>

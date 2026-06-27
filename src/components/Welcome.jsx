@@ -18,9 +18,7 @@ export default function Welcome({ onStart }) {
       </div>
 
       <div className="wel-top">
-        <div className="wel-logo"><Compass size={34} strokeWidth={2.4} /></div>
-        <h1 className="wel-name">{t("app.name")}</h1>
-        <p className="wel-tag">{t("welcome.tag")}</p>
+        <div className="wel-brandtile"><img src="/logo.png" alt="Hisab" /></div>
       </div>
 
       <div className="wel-feats">

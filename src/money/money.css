@@ -746,3 +746,24 @@
 .m-impact.warn { background: #ffe6c9; color: #b9700f; }
 .m-impact.bad { background: #fde0e0; color: #d23b3b; }
 .m-statcard p { font-size: 12px; color: var(--mut); margin: 0; line-height: 1.35; }
+
+/* ---- logo usage ---- */
+.login-logo { height: 128px; width: auto; display: block; margin: 0 auto 6px; }
+.wel-brandtile { background: #fff; border-radius: 26px; padding: 18px 26px; display: inline-block; box-shadow: 0 20px 50px -24px rgba(0,0,0,.35); }
+.wel-brandtile img { height: 200px; width: auto; display: block; }
+.wel-top { text-align: center; }
+.ws-logo { background: #fff !important; padding: 14px; overflow: hidden; }
+.ws-logo img { width: 78px; height: 78px; object-fit: contain; display: block; }
+
+/* ---- donut draw-in animation + outside labels ---- */
+.m-bd-arc { stroke-dasharray: 1; stroke-dashoffset: 1; animation: bd-draw 0.8s ease forwards; }
+@keyframes bd-draw { to { stroke-dashoffset: 0; } }
+.m-bd-pct { fill: #2a3340; font-size: 13px; font-weight: 800; }
+@media (prefers-reduced-motion: reduce) { .m-bd-arc { animation: none; stroke-dashoffset: 0; } }
+
+/* ---- hello row + wrapped pill ---- */
+.m-hello { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin: 6px 2px 14px; }
+.m-wrap-pill { flex: none; background: linear-gradient(135deg, #7c5cff, #0ea372); color: #fff; border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 18px -8px rgba(124,92,255,.5); }
+
+/* ---- cleaner impact cards ---- */
+.m-statcard { background: #f7faf9; border: 1px solid #eef1f0; }
