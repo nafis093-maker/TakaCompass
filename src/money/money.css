@@ -918,3 +918,12 @@
 
 /* misc headers to navy */
 .scr h2, .m-statbig { color: var(--tx); }
+
+/* ---- month picker dropdown ---- */
+.m-monthwrap { position: relative; flex: none; }
+.m-monthback { position: fixed; inset: 0; z-index: 40; }
+.m-monthmenu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 41; background: #fff; border: 1px solid #ececf5; border-radius: 16px; box-shadow: 0 22px 50px -18px rgba(70,60,140,.45); padding: 6px; width: 168px; max-height: 280px; overflow-y: auto; }
+.m-monthopt { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: none; border: none; border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: 700; color: var(--tx); cursor: pointer; }
+.m-monthopt:hover { background: #f5f4fc; }
+.m-monthopt.on { background: linear-gradient(150deg, #f1ecff, #eaf3ff); color: #5b6bd6; }
+.m-monthopt.on svg { color: #5b6bd6; }

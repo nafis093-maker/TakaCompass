@@ -3,7 +3,7 @@ import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
   Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark, Upload,
   CalendarClock, Moon, UploadCloud, Search, Bell, Cloud, Mic, ArrowUpRight,
-  ChevronDown, ArrowRight, TrendingUp, Info, CreditCard, Eye, Crown,
+  ChevronDown, ArrowRight, TrendingUp, Info, CreditCard, Eye, Crown, Check,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
@@ -309,14 +309,25 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
   const first = (userName || "").trim().split(/\s+/)[0];
   const hour = new Date().getHours();
   const greetWord = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const mk = today().slice(0, 7);
+  const [mk, setMk] = useState(today().slice(0, 7));
+  const [monthOpen, setMonthOpen] = useState(false);
+  const monthsAvail = useMemo(() => {
+    const set = new Set(txns.map((t) => monthKey(t.date)));
+    set.add(today().slice(0, 7));
+    return [...set].sort().reverse().slice(0, 12);
+  }, [txns]);
+  const prevMk = useMemo(() => {
+    const [y, m] = mk.split("-").map(Number);
+    const dt = new Date(y, m - 2, 1);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+  }, [mk]);
   const month = txns.filter((t) => monthKey(t.date) === mk);
   const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const cats = useMemo(() => categoryBreakdown(txns, "expense", mk), [txns, mk]);
   const flow = useMemo(() => cashflowMonths(txns, 6), [txns]);
   const incomeM = month.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const savingsPct = incomeM > 0 ? Math.round(((incomeM - spent) / incomeM) * 100) : 0;
-  const prevExpense = flow.length > 1 ? flow[flow.length - 2].expense : 0;
+  const prevExpense = txns.filter((t) => monthKey(t.date) === prevMk && t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const spendDelta = prevExpense > 0 ? Math.round(((spent - prevExpense) / prevExpense) * 100) : 0;
   const topCat = cats[0];
   const spentSeries = flow.map((f) => f.expense);
@@ -384,7 +395,22 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
               <div className="m-mc-total">{big(totalWealth(wallets, txns))}</div>
             </div>
           </div>
-          <button className="m-month-pill"><CalendarClock size={14} /> {monthLabel(mk)} <ChevronDown size={14} /></button>
+          <div className="m-monthwrap">
+            <button className="m-month-pill" onClick={() => setMonthOpen((o) => !o)}><CalendarClock size={14} /> {monthLabel(mk)} {mk.slice(0, 4) !== today().slice(0, 4) ? mk.slice(0, 4) : ""} <ChevronDown size={14} /></button>
+            {monthOpen && (
+              <>
+                <div className="m-monthback" onClick={() => setMonthOpen(false)} />
+                <div className="m-monthmenu">
+                  {monthsAvail.map((m) => (
+                    <button key={m} className={"m-monthopt " + (m === mk ? "on" : "")} onClick={() => { setMk(m); setMonthOpen(false); }}>
+                      <span>{monthLabel(m)} {m.slice(0, 4)}</span>
+                      {m === mk && <Check size={15} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {prevExpense > 0 && (

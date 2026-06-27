@@ -6,19 +6,19 @@ import {
 
 // ---- categories (colorful, like the reference money managers) -------------
 export const EXPENSE_CATS = [
-  { key: "food", label: "Food & Drink", Icon: Utensils, color: "#f97316" },
-  { key: "shopping", label: "Shopping", Icon: ShoppingBag, color: "#d946ef" },
-  { key: "transport", label: "Transport", Icon: TrainFront, color: "#f59e0b" },
-  { key: "home", label: "Home", Icon: Home, color: "#b08968" },
+  { key: "food", label: "Food & Drink", Icon: Utensils, color: "#ee7d5b" },
+  { key: "shopping", label: "Shopping", Icon: ShoppingBag, color: "#8b7cf0" },
+  { key: "transport", label: "Transport", Icon: TrainFront, color: "#efa63b" },
+  { key: "home", label: "Home", Icon: Home, color: "#a98467" },
   { key: "bills", label: "Bills & Fees", Icon: ReceiptText, color: "#14b8a6" },
-  { key: "fun", label: "Entertainment", Icon: Drama, color: "#fb923c" },
-  { key: "car", label: "Car", Icon: Car, color: "#3b82f6" },
-  { key: "travel", label: "Travel", Icon: Plane, color: "#ec4899" },
-  { key: "family", label: "Family", Icon: Users, color: "#60a5fa" },
-  { key: "health", label: "Healthcare", Icon: HeartPulse, color: "#ef4444" },
-  { key: "education", label: "Education", Icon: GraduationCap, color: "#2563eb" },
-  { key: "groceries", label: "Groceries", Icon: ShoppingCart, color: "#f59e0b" },
-  { key: "other", label: "Other", Icon: Tag, color: "#94a3b8" },
+  { key: "fun", label: "Entertainment", Icon: Drama, color: "#e2719e" },
+  { key: "car", label: "Car", Icon: Car, color: "#4f86f0" },
+  { key: "travel", label: "Travel", Icon: Plane, color: "#2bb0a3" },
+  { key: "family", label: "Family", Icon: Users, color: "#79a8f0" },
+  { key: "health", label: "Healthcare", Icon: HeartPulse, color: "#e3636f" },
+  { key: "education", label: "Education", Icon: GraduationCap, color: "#4063d8" },
+  { key: "groceries", label: "Groceries", Icon: ShoppingCart, color: "#5cb37e" },
+  { key: "other", label: "Other", Icon: Tag, color: "#9aa3b2" },
 ];
 export const INCOME_CATS = [
   { key: "salary", label: "Salary", Icon: Banknote, color: "#0ea372" },
