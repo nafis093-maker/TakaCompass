@@ -331,6 +331,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
   const insights = useMemo(() => buildInsights(d, Math.min(0.2 * d.monthlyIncome * 12, 1000000) * 0.5), [d]);
   const hero = insights[0];
   const [seg, setSeg] = useState("spend");
+  const segRef = useRef(null);
   const [q, setQ] = useState("");
   const soon = useMemo(() => upcoming(recurring, 14), [recurring]);
   const wname = (id) => wallets.find((w) => w.id === id)?.name || "Wallet";
@@ -392,11 +393,14 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
 
         {cats.length > 0 ? (
           <div className="m-mc-body">
+            <div className="m-mc-ring">
+              <RingDonut slices={cats} centerTop={big(totalWealth(wallets, txns))} />
+            </div>
             <div className="m-mc-cats">
-              {cats.slice(0, 3).map((c) => (
+              {cats.slice(0, 4).map((c) => (
                 <div className="m-mc-catrow" key={c.key} onClick={() => setSeg("spend")}>
                   <span className="m-catic" style={{ background: c.color + "1f", color: c.color }}><c.Icon size={18} strokeWidth={2.2} /></span>
-                  <span className="m-mc-cname"><i className="m-dot2" style={{ background: c.color }} /> {c.label}</span>
+                  <span className="m-mc-cname">{c.label}</span>
                   <span className="m-mc-cright">
                     <b>{tk(c.amount)}</b>
                     <small style={{ color: c.color }}>{Math.round(c.pct)}%</small>
@@ -405,16 +409,13 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
                 </div>
               ))}
             </div>
-            <div className="m-mc-ring">
-              <RingDonut slices={cats} centerTop={big(totalWealth(wallets, txns))} />
-            </div>
           </div>
         ) : (
           <p className="m-empty" style={{ padding: "18px 4px 6px" }}>Add a transaction to see your breakdown.</p>
         )}
 
         {spent > 0 && (
-          <button className="m-insight" onClick={() => setSeg("ins")}>
+          <button className="m-insight" onClick={() => { setSeg("ins"); setTimeout(() => segRef.current && segRef.current.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}>
             <span className="m-ins-icn"><Crown size={18} /></span>
             <span className="m-ins-txt">{savingsPct >= 20 ? <>Great job! You <b>saved more</b> this month 🚀</> : <>Here's where your money <b>went</b> this month 📊</>}</span>
             <span className="m-ins-cta">Insights <ArrowRight size={14} /></span>
@@ -456,7 +457,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
         </button>
       )}
 
-      <div className="m-toggle home-seg">
+      <div className="m-toggle home-seg" ref={segRef}>
         <button className={seg === "spend" ? "on" : ""} onClick={() => setSeg("spend")}>Spending</button>
         <button className={seg === "ins" ? "on" : ""} onClick={() => setSeg("ins")}>Insights{insights.length > 1 ? ` (${insights.length})` : ""}</button>
         <button className={seg === "act" ? "on" : ""} onClick={() => setSeg("act")}>Activity</button>
