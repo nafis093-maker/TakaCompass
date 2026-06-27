@@ -686,3 +686,28 @@
 
 /* rounded hero + insight cards */
 .m-hero, .pcard { border-radius: 20px; }
+
+/* ---- half donut ---- */
+.m-half { width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto 2px; }
+.m-half-big { fill: var(--tx); font-size: 26px; font-weight: 800; }
+.m-half-cap { fill: var(--mut); font-size: 11px; font-weight: 600; }
+
+/* ---- card header used by overview cards ---- */
+.m-eocard { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 16px; margin-top: 12px; box-shadow: 0 14px 34px -28px rgba(16, 60, 44, 0.55); }
+.m-cardhd { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.m-cardhd b { font-size: 15px; font-weight: 800; color: var(--tx); display: block; }
+.m-cardhd i { font-size: 12.5px; font-style: normal; color: var(--mut); }
+
+/* ---- expense overview chart ---- */
+.m-eo { width: 100%; height: auto; display: block; }
+.m-eo-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; }
+.m-eo-bub.e { fill: #3b82f6; }
+.m-eo-bub.i { fill: #0ea372; }
+.m-eo-bubtx { fill: #fff; font-size: 11px; font-weight: 800; }
+.m-eoleg { display: flex; gap: 16px; justify-content: center; margin-top: 8px; }
+.m-eoleg span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--mut); font-weight: 600; }
+.m-eoleg .d { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+/* ---- activity dot grid ---- */
+.m-dots { width: 100%; height: auto; display: block; }
+.m-dots-lb { fill: var(--mut); font-size: 12px; font-weight: 600; }

@@ -8,7 +8,7 @@ import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
   loadMoney, saveMoney, emptyData, sampleData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown, txnFingerprint,
 } from "./lib.js";
-import { CashflowBars, WealthLine, Donut } from "./charts.jsx";
+import { CashflowBars, WealthLine, Donut, HalfDonut, ExpenseOverview, ActivityDots } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
 import AddAccount from "./AddAccount.jsx";
 import ImportSms from "./ImportSms.jsx";
@@ -312,6 +312,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
   const month = txns.filter((t) => monthKey(t.date) === mk);
   const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const cats = useMemo(() => categoryBreakdown(txns, "expense", mk), [txns, mk]);
+  const flow = useMemo(() => cashflowMonths(txns, 6), [txns]);
   const d = useMemo(() => derive(data), [data]);
   const insights = useMemo(() => buildInsights(d, Math.min(0.2 * d.monthlyIncome * 12, 1000000) * 0.5), [d]);
   const hero = insights[0];
@@ -391,7 +392,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
         cats.length > 0 ? (
           <>
             <div className="m-spendcard">
-              <Donut slices={cats} centerLabel={big(spent)} />
+              <HalfDonut slices={cats} centerLabel={big(spent)} caption={`spent in ${monthLabel(mk)}`} />
               <div className="m-catlist">
                 {cats.slice(0, 5).map((c) => (
                   <div key={c.key} className="m-catrow" onClick={goPlan}>
@@ -405,6 +406,19 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
                 ))}
               </div>
             </div>
+
+            <div className="m-eocard">
+              <div className="m-cardhd">
+                <div><b>Expense overview</b><i>Income vs spending, last 6 months</i></div>
+                <span className="m-pill" onClick={goPlan}>Details ↗</span>
+              </div>
+              <ExpenseOverview data={flow} />
+              <div className="m-eoleg">
+                <span><i className="d" style={{ background: "#0ea372" }} /> Income</span>
+                <span><i className="d" style={{ background: "#3b82f6" }} /> Expense</span>
+              </div>
+            </div>
+
             <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> Full breakdown <ChevronRight size={16} /></button>
           </>
         ) : <p className="m-empty">No spending logged this month yet.</p>
@@ -426,6 +440,10 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
 
       {seg === "act" && (
         <>
+          <div className="m-eocard">
+            <div className="m-cardhd"><div><b>Payment history</b><i>Activity over the last 6 months</i></div></div>
+            <ActivityDots txns={txns} />
+          </div>
           {soon.length > 0 && (
             <button className="m-upcoming" onClick={openRecurring}>
               <span className="mu-ic"><Bell size={16} /></span>
