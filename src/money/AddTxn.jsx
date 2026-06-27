@@ -1,3 +1,4 @@
+import { srLang } from "./i18n.js";
 import React, { useState, useEffect } from "react";
 import { X, Check, Repeat, Paperclip, Mic } from "lucide-react";
 import { EXPENSE_CATS, INCOME_CATS, uid, today, niceDate } from "./lib.js";
@@ -23,7 +24,7 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
   const speak = async () => {
     setHeard(""); setVoice("listening");
     try {
-      const transcript = await listenOnce();
+      const transcript = await listenOnce({ lang: srLang() });
       setHeard(transcript);
       const p = parseSpeech(transcript);
       if (!p) { setVoice("error"); return; }

@@ -25,7 +25,7 @@ import Plan from "./Plan.jsx";
 import { CountUp } from "./anim.jsx";
 import { voiceAvailable } from "./voice.js";
 import { warmTts } from "./tts.js";
-import { t, useLang, setLang, getLang } from "./i18n.js";
+import { t, useLang, setLang, getLang, catLabel, mon, D } from "./i18n.js";
 import { syncConfigured, pull as syncPull, push as syncPush, loadMeta as loadSyncMeta, saveMeta as saveSyncMeta } from "./sync.js";
 import { derive } from "./derive.js";
 import { buildInsights } from "./planlib.js";
@@ -306,6 +306,7 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
 
 function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, openAdd, onAddAccount, onSample, onCsv, openRecurring, openWrapped, openReview }) {
   const { txns, wallets, recurring = [], pending = [] } = data;
+  useLang();
   const first = (userName || "").trim().split(/\s+/)[0];
   const hour = new Date().getHours();
   const greetWord = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -380,30 +381,43 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
     <div className="scr">
       <div className="m-hello">
         <div>
-          <div className="m-hello-hi">Hello{first ? ", " + first : ""} <span className="m-wave">👋</span></div>
-          <div className="m-hello-sub">Here's your money snapshot <span>😊</span></div>
+          <div className="m-hello-hi">{t("home.hi")}{first ? ", " + first : ""} <span className="m-wave">👋</span></div>
+          <div className="m-hello-sub">{t("home.snapshot")} <span>😊</span></div>
         </div>
-        <button className="m-wrap-pill" onClick={openWrapped}><Sparkles size={15} /> Wrapped</button>
+        <button className="m-wrap-pill" onClick={openWrapped}><Sparkles size={15} /> {t("home.wrapped")}</button>
       </div>
+
+      {hero && (
+        <button className={"m-spotlight " + hero.level} onClick={goPlan}>
+          <span className="m-sl-icn">{PRIORITY ? <Info size={20} /> : <Sparkles size={20} />}</span>
+          <span className="m-sl-body">
+            <span className="m-sl-tag">{hero.tagText}{PRIORITY ? " · top priority" : ""}</span>
+            <b>{hero.title}</b>
+            <p>{hero.body}</p>
+            {hero.action && <p className="m-sl-fix">{hero.action}</p>}
+          </span>
+          <span className="m-sl-go"><ChevronRight size={18} /></span>
+        </button>
+      )}
 
       <div className="m-maincard">
         <div className="m-mc-top">
           <div className="m-mc-left">
             <span className="m-mc-icn"><WalletIcon size={22} strokeWidth={2.2} /></span>
             <div>
-              <div className="m-mc-lbl">Total Amount</div>
-              <div className="m-mc-total">{big(totalWealth(wallets, txns))}</div>
+              <div className="m-mc-lbl">{t("home.total")}</div>
+              <div className="m-mc-total">{D(big(totalWealth(wallets, txns)))}</div>
             </div>
           </div>
           <div className="m-monthwrap">
-            <button className="m-month-pill" onClick={() => setMonthOpen((o) => !o)}><CalendarClock size={14} /> {monthLabel(mk)} {mk.slice(0, 4) !== today().slice(0, 4) ? mk.slice(0, 4) : ""} <ChevronDown size={14} /></button>
+            <button className="m-month-pill" onClick={() => setMonthOpen((o) => !o)}><CalendarClock size={14} /> {mon(mk)} {mk.slice(0, 4) !== today().slice(0, 4) ? D(mk.slice(0, 4)) : ""} <ChevronDown size={14} /></button>
             {monthOpen && (
               <>
                 <div className="m-monthback" onClick={() => setMonthOpen(false)} />
                 <div className="m-monthmenu">
                   {monthsAvail.map((m) => (
                     <button key={m} className={"m-monthopt " + (m === mk ? "on" : "")} onClick={() => { setMk(m); setMonthOpen(false); }}>
-                      <span>{monthLabel(m)} {m.slice(0, 4)}</span>
+                      <span>{mon(m)} {D(m.slice(0, 4))}</span>
                       {m === mk && <Check size={15} />}
                     </button>
                   ))}
@@ -414,22 +428,22 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
         </div>
 
         {prevExpense > 0 && (
-          <span className={"m-delta " + (spendDelta <= 0 ? "good" : "bad")}>{spendDelta <= 0 ? "↓" : "↑"} {Math.abs(spendDelta)}% <i>vs last month</i></span>
+          <span className={"m-delta " + (spendDelta <= 0 ? "good" : "bad")}>{spendDelta <= 0 ? "↓" : "↑"} {D(Math.abs(spendDelta))}% <i>{t("home.vslast")}</i></span>
         )}
 
         {cats.length > 0 ? (
           <div className="m-mc-body">
             <div className="m-mc-ring">
-              <RingDonut slices={cats} centerTop={big(totalWealth(wallets, txns))} />
+              <RingDonut slices={cats} centerTop={D(big(totalWealth(wallets, txns)))} centerSub={t("home.total")} />
             </div>
             <div className="m-mc-cats">
               {cats.slice(0, 4).map((c) => (
                 <div className="m-mc-catrow" key={c.key} onClick={() => setSeg("spend")}>
                   <span className="m-catic" style={{ background: c.color + "1f", color: c.color }}><c.Icon size={18} strokeWidth={2.2} /></span>
-                  <span className="m-mc-cname">{c.label}</span>
+                  <span className="m-mc-cname">{catLabel(c.key, c.label)}</span>
                   <span className="m-mc-cright">
-                    <b>{tk(c.amount)}</b>
-                    <small style={{ color: c.color }}>{Math.round(c.pct)}%</small>
+                    <b>{D(tk(c.amount))}</b>
+                    <small style={{ color: c.color }}>{D(Math.round(c.pct))}%</small>
                   </span>
                   <ChevronRight size={16} className="m-mc-chev" />
                 </div>
@@ -437,30 +451,30 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
             </div>
           </div>
         ) : (
-          <p className="m-empty" style={{ padding: "18px 4px 6px" }}>Add a transaction to see your breakdown.</p>
+          <p className="m-empty" style={{ padding: "18px 4px 6px" }}>{t("home.addtxn")}</p>
         )}
 
         {spent > 0 && (
           <button className="m-insight" onClick={() => { setSeg("ins"); setTimeout(() => segRef.current && segRef.current.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }}>
             <span className="m-ins-icn"><Crown size={18} /></span>
-            <span className="m-ins-txt">{savingsPct >= 20 ? <>Great job! You <b>saved more</b> this month 🚀</> : <>Here's where your money <b>went</b> this month 📊</>}</span>
-            <span className="m-ins-cta">Insights <ArrowRight size={14} /></span>
+            <span className="m-ins-txt">{savingsPct >= 20 ? t("home.greatjob") : t("home.wherewent")}</span>
+            <span className="m-ins-cta">{t("home.insights")} <ArrowRight size={14} /></span>
           </button>
         )}
       </div>
 
       <div className="m-featgrid">
         <div className="m-featcard save" onClick={goPlan}>
-          <div className="m-feat-hd"><span className="m-feat-icn save"><TrendingUp size={18} /></span><span className="m-feat-title">Savings rate</span><span className="m-feat-info"><Info size={14} /></span></div>
-          <div className="m-feat-row"><b>{savingsPct}%</b><span className={"m-feat-tag " + (savingsPct >= 20 ? "good" : "warn")}>● {savingsPct >= 20 ? "Healthy" : savingsPct >= 0 ? "Low" : "Over"}</span></div>
-          <div className="m-feat-sub">Of income kept in {monthLabel(mk)}</div>
+          <div className="m-feat-hd"><span className="m-feat-icn save"><TrendingUp size={18} /></span><span className="m-feat-title">{t("home.savings")}</span><span className="m-feat-info"><Info size={14} /></span></div>
+          <div className="m-feat-row"><b>{D(savingsPct)}%</b><span className={"m-feat-tag " + (savingsPct >= 20 ? "good" : "warn")}>● {savingsPct >= 20 ? t("home.healthy") : savingsPct >= 0 ? t("home.low") : t("home.over")}</span></div>
+          <div className="m-feat-sub">{t("home.savsub")}</div>
           <Sparkline data={savingsSeries} color="#12b39b" />
-          <div className="m-feat-bar"><span>{savingsPct}%</span><div className="m-fbar"><i style={{ width: Math.max(0, Math.min(100, savingsPct)) + "%" }} /></div><span>100%</span></div>
+          <div className="m-feat-bar"><span>{D(savingsPct)}%</span><div className="m-fbar"><i style={{ width: Math.max(0, Math.min(100, savingsPct)) + "%" }} /></div><span>{D(100)}%</span></div>
         </div>
         <div className="m-featcard spent" onClick={() => setSeg("act")}>
-          <div className="m-feat-hd"><span className="m-feat-icn spent"><CreditCard size={18} /></span><span className="m-feat-title">Spent</span><span className="m-feat-info"><Eye size={14} /></span></div>
-          <div className="m-feat-row"><b>{big(spent)}</b>{prevExpense > 0 && <span className={"m-feat-tag " + (spendDelta <= 0 ? "good" : "bad")}>{spendDelta <= 0 ? "↓" : "↑"} {Math.abs(spendDelta)}%</span>}</div>
-          <div className="m-feat-sub">Compared to last month</div>
+          <div className="m-feat-hd"><span className="m-feat-icn spent"><CreditCard size={18} /></span><span className="m-feat-title">{t("home.spent")}</span><span className="m-feat-info"><Eye size={14} /></span></div>
+          <div className="m-feat-row"><b>{D(big(spent))}</b>{prevExpense > 0 && <span className={"m-feat-tag " + (spendDelta <= 0 ? "good" : "bad")}>{spendDelta <= 0 ? "↓" : "↑"} {D(Math.abs(spendDelta))}%</span>}</div>
+          <div className="m-feat-sub">{t("home.spentsub")}</div>
           <Sparkline data={spentSeries} color="#3f8df0" />
         </div>
       </div>
@@ -473,20 +487,10 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
         </button>
       )}
 
-      {hero && (
-        <button className={"m-hero " + hero.level} onClick={goPlan}>
-          <span className="mh-tag">{hero.tagText}{PRIORITY ? " · top priority" : ""}</span>
-          <b>{hero.title}</b>
-          <p>{hero.body}</p>
-          {hero.action && <p className="mh-fix">{hero.action}</p>}
-          <span className="mh-go">Open plan <ChevronRight size={14} /></span>
-        </button>
-      )}
-
       <div className="m-toggle home-seg" ref={segRef}>
-        <button className={seg === "spend" ? "on" : ""} onClick={() => setSeg("spend")}>Spending</button>
-        <button className={seg === "ins" ? "on" : ""} onClick={() => setSeg("ins")}>Insights{insights.length > 1 ? ` (${insights.length})` : ""}</button>
-        <button className={seg === "act" ? "on" : ""} onClick={() => setSeg("act")}>Activity</button>
+        <button className={seg === "spend" ? "on" : ""} onClick={() => setSeg("spend")}>{t("seg.spending")}</button>
+        <button className={seg === "ins" ? "on" : ""} onClick={() => setSeg("ins")}>{t("seg.insights")}{insights.length > 1 ? ` (${D(insights.length)})` : ""}</button>
+        <button className={seg === "act" ? "on" : ""} onClick={() => setSeg("act")}>{t("seg.activity")}</button>
       </div>
 
       {seg === "spend" && (

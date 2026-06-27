@@ -55,6 +55,41 @@ const DICT = {
     "login.guest": "Skip — just let me in",
     "login.connecting": "Connecting…",
     "login.fine": "No backend, no tracking. Your numbers stay in this browser, tied to your sign-in.",
+    "home.hi": "Hello",
+    "home.snapshot": "Here's your money snapshot",
+    "home.total": "Total Amount",
+    "home.thismonth": "This Month",
+    "home.vslast": "vs last month",
+    "home.savings": "Savings rate",
+    "home.spent": "Spent",
+    "home.healthy": "Healthy",
+    "home.low": "Low",
+    "home.over": "Over",
+    "home.savsub": "Of income you kept",
+    "home.spentsub": "Compared to last month",
+    "home.insights": "Insights",
+    "home.wrapped": "Wrapped",
+    "home.addtxn": "Add a transaction to see your breakdown.",
+    "home.greatjob": "Great job! You saved more this month 🚀",
+    "home.wherewent": "Here's where your money went this month 📊",
+    "seg.spending": "Spending",
+    "seg.insights": "Insights",
+    "seg.activity": "Activity",
+    "voice.title": "Quick add by voice",
+    "voice.sub": "Tap start, then just say it",
+    "voice.start": "Start",
+    "voice.prompt": "Say your amount now",
+    "voice.listening": "Listening…",
+    "voice.thanks": "Got it, thank you",
+    "voice.heard": "Heard",
+    "voice.err": "Sorry, I couldn't catch that",
+    "voice.tryagain": "Try again",
+    "voice.type": "Type instead",
+    "voice.cancel": "Cancel",
+    "voice.add": "Add",
+    "voice.eg1": "e.g. 500 lunch",
+    "voice.eg2": "e.g. 1200 groceries",
+    "voice.eg3": "e.g. got salary 50000",
   },
   bn: {
     "app.name": "হিসাব",
@@ -110,6 +145,41 @@ const DICT = {
     "login.guest": "এড়িয়ে যান — ঢুকে পড়ি",
     "login.connecting": "সংযুক্ত হচ্ছে…",
     "login.fine": "কোনো ব্যাকএন্ড নেই, ট্র্যাকিং নেই। আপনার তথ্য এই ব্রাউজারেই থাকে।",
+    "home.hi": "হ্যালো",
+    "home.snapshot": "আপনার টাকার ছবি দেখে নিন",
+    "home.total": "মোট পরিমাণ",
+    "home.thismonth": "এই মাস",
+    "home.vslast": "গত মাসের তুলনায়",
+    "home.savings": "সঞ্চয়ের হার",
+    "home.spent": "খরচ",
+    "home.healthy": "ভালো",
+    "home.low": "কম",
+    "home.over": "বেশি",
+    "home.savsub": "আয়ের যে অংশ রেখেছেন",
+    "home.spentsub": "গত মাসের তুলনায়",
+    "home.insights": "বিশ্লেষণ",
+    "home.wrapped": "র‍্যাপড",
+    "home.addtxn": "বিভাজন দেখতে একটি লেনদেন যোগ করুন।",
+    "home.greatjob": "দারুণ! এই মাসে বেশি সঞ্চয় করেছেন 🚀",
+    "home.wherewent": "এই মাসে আপনার টাকা কোথায় গেছে দেখুন 📊",
+    "seg.spending": "খরচ",
+    "seg.insights": "বিশ্লেষণ",
+    "seg.activity": "কার্যকলাপ",
+    "voice.title": "কথা বলে যোগ করুন",
+    "voice.sub": "স্টার্ট চাপুন, তারপর বলুন",
+    "voice.start": "শুরু",
+    "voice.prompt": "এখন আপনার পরিমাণ বলুন",
+    "voice.listening": "শুনছি…",
+    "voice.thanks": "পেয়েছি, ধন্যবাদ",
+    "voice.heard": "শুনেছি",
+    "voice.err": "দুঃখিত, ধরতে পারিনি",
+    "voice.tryagain": "আবার চেষ্টা করুন",
+    "voice.type": "টাইপ করুন",
+    "voice.cancel": "বাতিল",
+    "voice.add": "যোগ করুন",
+    "voice.eg1": "যেমন ৫০০ দুপুরের খাবার",
+    "voice.eg2": "যেমন ১২০০ বাজার",
+    "voice.eg3": "যেমন বেতন পেলাম ৫০০০০",
   },
 };
 
@@ -127,6 +197,16 @@ export function t(key) {
   const table = DICT[lang] || DICT.en;
   return (key in table) ? table[key] : (DICT.en[key] != null ? DICT.en[key] : key);
 }
+const MON_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MON_BN = ["জানু","ফেব্রু","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টে","অক্টো","নভে","ডিসে"];
+const CAT_BN = { food:"খাবার ও পানীয়", shopping:"কেনাকাটা", transport:"যাতায়াত", home:"বাসা", bills:"বিল ও ফি", fun:"বিনোদন", car:"গাড়ি", travel:"ভ্রমণ", family:"পরিবার", health:"স্বাস্থ্য", education:"শিক্ষা", groceries:"বাজার", other:"অন্যান্য", salary:"বেতন", business:"ব্যবসা", gift:"উপহার", investment:"বিনিয়োগ", other_in:"অন্যান্য" };
+const BN_DIG = ["০","১","২","৩","৪","৫","৬","৭","৮","৯"];
+export function catLabel(key, enLabel) { return (lang === "bn" && CAT_BN[key]) ? CAT_BN[key] : enLabel; }
+export function mon(mk) { const i = parseInt(String(mk).slice(5,7),10)-1; return (lang==="bn"?MON_BN:MON_EN)[i] || ""; }
+export function D(x) { return lang === "bn" ? String(x).replace(/[0-9]/g, (d)=>BN_DIG[+d]) : String(x); }
+export function ttsLang() { return lang === "bn" ? "bn-BD" : "en-US"; }
+export function srLang() { return lang === "bn" ? "bn-BD" : "en-US"; }
+
 export function useLang() {
   const [, force] = useReducer((x) => x + 1, 0);
   useEffect(() => { subs.add(force); return () => { subs.delete(force); }; }, []);
