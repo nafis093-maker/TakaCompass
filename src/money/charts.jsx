@@ -195,3 +195,28 @@ export function ActivityDots({ txns }) {
     </svg>
   );
 }
+
+// ---- Big full donut with % labels (bleeds off the edge in the hero) ----
+export function BigDonut({ slices }) {
+  const C = 110, R = 104, r = 62;
+  const visible = (slices || []).filter((s) => s.amount > 0);
+  const total = visible.reduce((s, x) => s + x.amount, 0) || 1;
+  const p = (ang, rad) => [C + rad * Math.cos(ang), C + rad * Math.sin(ang)];
+  let a = -Math.PI / 2;
+  const segs = visible.map((s) => {
+    const frac = s.amount / total;
+    const a0 = a, a1 = a + frac * 2 * Math.PI; a = a1;
+    const large = (a1 - a0) > Math.PI ? 1 : 0;
+    const [ox0, oy0] = p(a0, R), [ox1, oy1] = p(a1, R), [ix1, iy1] = p(a1, r), [ix0, iy0] = p(a0, r);
+    const d = `M${ox0.toFixed(1)} ${oy0.toFixed(1)} A${R} ${R} 0 ${large} 1 ${ox1.toFixed(1)} ${oy1.toFixed(1)} L${ix1.toFixed(1)} ${iy1.toFixed(1)} A${r} ${r} 0 ${large} 0 ${ix0.toFixed(1)} ${iy0.toFixed(1)} Z`;
+    const mid = (a0 + a1) / 2;
+    const [lx, ly] = p(mid, (R + r) / 2);
+    return { d, color: s.color, lx, ly, pct: Math.round(frac * 100), key: s.key };
+  });
+  return (
+    <svg viewBox="0 0 220 220" className="m-bigdonut">
+      {segs.map((s) => <path key={s.key} d={s.d} fill={s.color} />)}
+      {segs.map((s) => s.pct >= 7 ? <text key={s.key + "t"} x={s.lx} y={s.ly + 4} textAnchor="middle" className="m-bd-pct">{s.pct}%</text> : null)}
+    </svg>
+  );
+}

@@ -711,3 +711,38 @@
 /* ---- activity dot grid ---- */
 .m-dots { width: 100%; height: auto; display: block; }
 .m-dots-lb { fill: var(--mut); font-size: 12px; font-weight: 600; }
+
+/* ===== Mintro dashboard hero ===== */
+.m-hello { margin: 6px 2px 14px; }
+.m-hello-hi { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; color: #1b2430; }
+.m-hello-sub { font-size: 22px; font-weight: 500; color: #6b7686; letter-spacing: -0.02em; margin-top: 2px; }
+.m-hello-sub span { font-weight: 400; }
+
+.m-dash { position: relative; overflow: hidden; min-height: 232px; margin-bottom: 14px; }
+.m-dash-left { position: relative; z-index: 1; max-width: 62%; }
+.m-dash-lbl { font-size: 14px; color: var(--mut); font-weight: 600; }
+.m-dash-big { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; color: #1b2430; margin: 2px 0 16px; font-variant-numeric: tabular-nums; }
+.m-dash-cats { display: flex; flex-direction: column; gap: 14px; }
+.m-dash-cat { display: flex; align-items: center; gap: 11px; cursor: pointer; }
+.m-dash-cat .m-catic { width: 38px; height: 38px; border-radius: 12px; flex: none; }
+.m-dash-cname { font-size: 13.5px; color: var(--mut); font-weight: 600; }
+.m-dash-camt { font-size: 17px; font-weight: 800; color: #1b2430; font-variant-numeric: tabular-nums; }
+
+.m-dash-right { position: absolute; top: 14px; right: -58px; width: 210px; z-index: 0; }
+.m-bigdonut { width: 100%; height: auto; display: block; }
+.m-bd-pct { fill: #ffffff; font-size: 13px; font-weight: 800; }
+.m-bd-badge { position: absolute; left: -10px; top: 50%; transform: translateY(-50%); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800; color: #1b2430; box-shadow: 0 6px 16px -8px rgba(0,0,0,.25); white-space: nowrap; }
+
+/* ===== impact cards (2x2) ===== */
+.m-statgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.m-statcard { background: linear-gradient(165deg, #fbf7f4, #fdfdfd 70%); border: 1px solid #f0eeec; border-radius: 20px; padding: 15px; cursor: pointer; box-shadow: 0 12px 30px -26px rgba(20,30,25,.5); }
+.m-stat-hd { display: flex; align-items: center; justify-content: space-between; }
+.m-stat-title { font-size: 14px; font-weight: 700; color: #2a3340; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-stat-arrow { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 1.5px solid #e2e0dd; display: flex; align-items: center; justify-content: center; color: #5b6470; }
+.m-stat-row { display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; }
+.m-stat-row b { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #1b2430; font-variant-numeric: tabular-nums; }
+.m-impact { font-size: 11px; font-weight: 800; border-radius: 8px; padding: 4px 8px; white-space: nowrap; }
+.m-impact.good { background: #d8f3e4; color: #0a8a55; }
+.m-impact.warn { background: #ffe6c9; color: #b9700f; }
+.m-impact.bad { background: #fde0e0; color: #d23b3b; }
+.m-statcard p { font-size: 12px; color: var(--mut); margin: 0; line-height: 1.35; }

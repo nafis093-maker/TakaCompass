@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
   Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark, Upload,
-  CalendarClock, Moon, UploadCloud, Search, Bell, Cloud, Mic,
+  CalendarClock, Moon, UploadCloud, Search, Bell, Cloud, Mic, ArrowUpRight,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
   loadMoney, saveMoney, emptyData, sampleData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown, txnFingerprint,
 } from "./lib.js";
-import { CashflowBars, WealthLine, Donut, HalfDonut, ExpenseOverview, ActivityDots } from "./charts.jsx";
+import { CashflowBars, WealthLine, Donut, HalfDonut, ExpenseOverview, ActivityDots, BigDonut } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
 import AddAccount from "./AddAccount.jsx";
 import ImportSms from "./ImportSms.jsx";
@@ -313,6 +313,17 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
   const spent = month.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const cats = useMemo(() => categoryBreakdown(txns, "expense", mk), [txns, mk]);
   const flow = useMemo(() => cashflowMonths(txns, 6), [txns]);
+  const incomeM = month.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const savingsPct = incomeM > 0 ? Math.round(((incomeM - spent) / incomeM) * 100) : 0;
+  const prevExpense = flow.length > 1 ? flow[flow.length - 2].expense : 0;
+  const spendDelta = prevExpense > 0 ? Math.round(((spent - prevExpense) / prevExpense) * 100) : 0;
+  const topCat = cats[0];
+  const stats = [
+    { k: "save", title: "Savings rate", value: `${savingsPct}%`, impact: savingsPct >= 20 ? "Healthy" : savingsPct >= 0 ? "Low" : "Over", tone: savingsPct >= 20 ? "good" : savingsPct >= 0 ? "warn" : "bad", desc: `Of income kept in ${monthLabel(mk)}`, go: goPlan },
+    { k: "spent", title: "Spent", value: big(spent), impact: prevExpense ? `${spendDelta >= 0 ? "↑" : "↓"} ${Math.abs(spendDelta)}%` : "—", tone: spendDelta > 0 ? "warn" : "good", desc: `Total expenses in ${monthLabel(mk)}`, go: () => setSeg("act") },
+    { k: "income", title: "Income", value: big(incomeM), impact: "In", tone: "good", desc: `Money in during ${monthLabel(mk)}`, go: goPlan },
+    { k: "top", title: topCat ? topCat.label : "Top category", value: topCat ? `${Math.round(topCat.pct)}%` : "—", impact: topCat && topCat.pct >= 40 ? "Heavy" : "Top", tone: topCat && topCat.pct >= 40 ? "warn" : "good", desc: "Biggest spending share", go: () => setSeg("spend") },
+  ];
   const d = useMemo(() => derive(data), [data]);
   const insights = useMemo(() => buildInsights(d, Math.min(0.2 * d.monthlyIncome * 12, 1000000) * 0.5), [d]);
   const hero = insights[0];
@@ -352,16 +363,40 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
 
   return (
     <div className="scr">
-      <div className="m-head">
-        <div className="m-greet">{greetWord}{first ? ", " + first : ""} <span className="m-wave">👋</span></div>
-        <div className="m-headcard">
-          <div className="m-headtop">
-            <span className="m-headlbl">Total wealth</span>
-            <span className="m-pill" onClick={openWrapped} role="button">{monthLabel(mk)} ↗</span>
+      <div className="m-hello">
+        <div className="m-hello-hi">Hello{first ? ", " + first : ""}</div>
+        <div className="m-hello-sub">Here's your money snapshot <span>😊</span></div>
+      </div>
+
+      <div className="m-dash">
+        <div className="m-dash-left">
+          <div className="m-dash-lbl">Total Amount</div>
+          <div className="m-dash-big"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
+          <div className="m-dash-cats">
+            {(cats.length ? cats : [{ key: "none", label: "No spending yet", amount: 0, color: "#94a3b8", Icon: WalletIcon }]).slice(0, 3).map((c) => (
+              <div className="m-dash-cat" key={c.key} onClick={() => setSeg("spend")}>
+                <span className="m-catic" style={{ background: c.color + "1f", color: c.color }}><c.Icon size={18} strokeWidth={2.2} /></span>
+                <div><div className="m-dash-cname">{c.label}</div><div className="m-dash-camt">{c.amount ? big(c.amount) : "—"}</div></div>
+              </div>
+            ))}
           </div>
-          <div className="m-bignum"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
-          <div className="m-sublabel">{tk(spent)} spent in {monthLabel(mk)}</div>
         </div>
+        {cats.length > 0 && (
+          <div className="m-dash-right">
+            <BigDonut slices={cats} />
+            <span className="m-bd-badge">🔥 {d.loggingStreak || 0} pts</span>
+          </div>
+        )}
+      </div>
+
+      <div className="m-statgrid">
+        {stats.map((s) => (
+          <div className="m-statcard" key={s.k} onClick={s.go}>
+            <div className="m-stat-hd"><span className="m-stat-title">{s.title}</span><span className="m-stat-arrow"><ArrowUpRight size={15} /></span></div>
+            <div className="m-stat-row"><b>{s.value}</b><span className={"m-impact " + s.tone}>{s.impact}</span></div>
+            <p>{s.desc}</p>
+          </div>
+        ))}
       </div>
 
       {pending.length > 0 && (
@@ -391,10 +426,12 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
       {seg === "spend" && (
         cats.length > 0 ? (
           <>
-            <div className="m-spendcard">
-              <HalfDonut slices={cats} centerLabel={big(spent)} caption={`spent in ${monthLabel(mk)}`} />
+            <div className="m-eocard">
+              <div className="m-cardhd">
+                <div><b>By category</b><i>{monthLabel(mk)} spending</i></div>
+              </div>
               <div className="m-catlist">
-                {cats.slice(0, 5).map((c) => (
+                {cats.map((c) => (
                   <div key={c.key} className="m-catrow" onClick={goPlan}>
                     <span className="m-catic" style={{ background: c.color + "1f", color: c.color }}><c.Icon size={19} strokeWidth={2.2} /></span>
                     <div className="m-catmeta">
