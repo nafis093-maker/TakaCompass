@@ -3,12 +3,13 @@ import {
   Receipt, Wallet as WalletIcon, PiggyBank, Sparkles, MoreHorizontal,
   Plus, ChevronRight, Banknote, Download, LogOut, MessageSquareText, FileText, Trash2, Landmark, Upload,
   CalendarClock, Moon, UploadCloud, Search, Bell, Cloud, Mic, ArrowUpRight,
+  ChevronDown, ArrowRight, TrendingUp, Info, CreditCard, Eye, Crown,
 } from "lucide-react";
 import {
   EXPENSE_CATS, catOf, kindOf, tk, signed, big, uid, today, monthKey, monthLabel, niceDate,
   loadMoney, saveMoney, emptyData, sampleData, walletBalance, totalWealth, cashflowMonths, wealthSeries, budgetSpent, categoryBreakdown, txnFingerprint,
 } from "./lib.js";
-import { CashflowBars, WealthLine, Donut, HalfDonut, ExpenseOverview, ActivityDots, BigDonut } from "./charts.jsx";
+import { CashflowBars, WealthLine, Donut, HalfDonut, ExpenseOverview, ActivityDots, BigDonut, RingDonut, Sparkline } from "./charts.jsx";
 import AddTxn from "./AddTxn.jsx";
 import AddAccount from "./AddAccount.jsx";
 import ImportSms from "./ImportSms.jsx";
@@ -318,6 +319,8 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
   const prevExpense = flow.length > 1 ? flow[flow.length - 2].expense : 0;
   const spendDelta = prevExpense > 0 ? Math.round(((spent - prevExpense) / prevExpense) * 100) : 0;
   const topCat = cats[0];
+  const spentSeries = flow.map((f) => f.expense);
+  const savingsSeries = flow.map((f) => (f.income > 0 ? Math.round(((f.income - f.expense) / f.income) * 100) : 0));
   const stats = [
     { k: "save", title: "Savings rate", value: `${savingsPct}%`, impact: savingsPct >= 20 ? "Healthy" : savingsPct >= 0 ? "Low" : "Over", tone: savingsPct >= 20 ? "good" : savingsPct >= 0 ? "warn" : "bad", desc: `Of income kept in ${monthLabel(mk)}`, go: goPlan },
     { k: "spent", title: "Spent", value: big(spent), impact: prevExpense ? `${spendDelta >= 0 ? "↑" : "↓"} ${Math.abs(spendDelta)}%` : "—", tone: spendDelta > 0 ? "warn" : "good", desc: `Total expenses in ${monthLabel(mk)}`, go: () => setSeg("act") },
@@ -365,44 +368,74 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
     <div className="scr">
       <div className="m-hello">
         <div>
-          <div className="m-hello-hi">Hello{first ? ", " + first : ""}</div>
+          <div className="m-hello-hi">Hello{first ? ", " + first : ""} <span className="m-wave">👋</span></div>
           <div className="m-hello-sub">Here's your money snapshot <span>😊</span></div>
         </div>
-        {spent > 0 && <button className="m-wrap-pill" onClick={openWrapped}>✨ Wrapped</button>}
+        <button className="m-wrap-pill" onClick={openWrapped}><Sparkles size={15} /> Wrapped</button>
       </div>
 
-      <div className="m-donutcard">
+      <div className="m-maincard">
+        <div className="m-mc-top">
+          <div className="m-mc-left">
+            <span className="m-mc-icn"><WalletIcon size={22} strokeWidth={2.2} /></span>
+            <div>
+              <div className="m-mc-lbl">Total Amount</div>
+              <div className="m-mc-total">{big(totalWealth(wallets, txns))}</div>
+            </div>
+          </div>
+          <button className="m-month-pill"><CalendarClock size={14} /> {monthLabel(mk)} <ChevronDown size={14} /></button>
+        </div>
+
+        {prevExpense > 0 && (
+          <span className={"m-delta " + (spendDelta <= 0 ? "good" : "bad")}>{spendDelta <= 0 ? "↓" : "↑"} {Math.abs(spendDelta)}% <i>vs last month</i></span>
+        )}
+
         {cats.length > 0 ? (
-          <>
-            <div className="m-dlbl">Total Amount</div>
-            <Donut slices={cats} centerLabel={big(totalWealth(wallets, txns))} />
-            <div className="m-dlegend">
-              {cats.slice(0, 4).map((c) => (
-                <div key={c.key} className="m-dleg-row" onClick={() => setSeg("spend")}>
-                  <span className="m-dleg-dot" style={{ background: c.color }} />
-                  <span className="m-dleg-name">{c.label}</span>
-                  <span className="m-dleg-amt">{tk(c.amount)}</span>
+          <div className="m-mc-body">
+            <div className="m-mc-cats">
+              {cats.slice(0, 3).map((c) => (
+                <div className="m-mc-catrow" key={c.key} onClick={() => setSeg("spend")}>
+                  <span className="m-catic" style={{ background: c.color + "1f", color: c.color }}><c.Icon size={18} strokeWidth={2.2} /></span>
+                  <span className="m-mc-cname"><i className="m-dot2" style={{ background: c.color }} /> {c.label}</span>
+                  <span className="m-mc-cright">
+                    <b>{tk(c.amount)}</b>
+                    <small style={{ color: c.color }}>{Math.round(c.pct)}%</small>
+                  </span>
+                  <ChevronRight size={16} className="m-mc-chev" />
                 </div>
               ))}
             </div>
-          </>
-        ) : (
-          <div className="m-dempty">
-            <div className="m-dlbl">Total Amount</div>
-            <div className="m-dash-big"><CountUp value={totalWealth(wallets, txns)} format={tk} /></div>
-            <p className="m-empty" style={{ margin: "6px 0 0" }}>Add a transaction to see your breakdown.</p>
+            <div className="m-mc-ring">
+              <RingDonut slices={cats} centerTop={big(totalWealth(wallets, txns))} />
+            </div>
           </div>
+        ) : (
+          <p className="m-empty" style={{ padding: "18px 4px 6px" }}>Add a transaction to see your breakdown.</p>
+        )}
+
+        {spent > 0 && (
+          <button className="m-insight" onClick={() => setSeg("ins")}>
+            <span className="m-ins-icn"><Crown size={18} /></span>
+            <span className="m-ins-txt">{savingsPct >= 20 ? <>Great job! You <b>saved more</b> this month 🚀</> : <>Here's where your money <b>went</b> this month 📊</>}</span>
+            <span className="m-ins-cta">Insights <ArrowRight size={14} /></span>
+          </button>
         )}
       </div>
 
-      <div className="m-statgrid">
-        {stats.map((s) => (
-          <div className="m-statcard" key={s.k} onClick={s.go}>
-            <div className="m-stat-hd"><span className="m-stat-title">{s.title}</span><span className="m-stat-arrow"><ArrowUpRight size={15} /></span></div>
-            <div className="m-stat-row"><b>{s.value}</b><span className={"m-impact " + s.tone}>{s.impact}</span></div>
-            <p>{s.desc}</p>
-          </div>
-        ))}
+      <div className="m-featgrid">
+        <div className="m-featcard save" onClick={goPlan}>
+          <div className="m-feat-hd"><span className="m-feat-icn save"><TrendingUp size={18} /></span><span className="m-feat-title">Savings rate</span><span className="m-feat-info"><Info size={14} /></span></div>
+          <div className="m-feat-row"><b>{savingsPct}%</b><span className={"m-feat-tag " + (savingsPct >= 20 ? "good" : "warn")}>● {savingsPct >= 20 ? "Healthy" : savingsPct >= 0 ? "Low" : "Over"}</span></div>
+          <div className="m-feat-sub">Of income kept in {monthLabel(mk)}</div>
+          <Sparkline data={savingsSeries} color="#12b39b" />
+          <div className="m-feat-bar"><span>{savingsPct}%</span><div className="m-fbar"><i style={{ width: Math.max(0, Math.min(100, savingsPct)) + "%" }} /></div><span>100%</span></div>
+        </div>
+        <div className="m-featcard spent" onClick={() => setSeg("act")}>
+          <div className="m-feat-hd"><span className="m-feat-icn spent"><CreditCard size={18} /></span><span className="m-feat-title">Spent</span><span className="m-feat-info"><Eye size={14} /></span></div>
+          <div className="m-feat-row"><b>{big(spent)}</b>{prevExpense > 0 && <span className={"m-feat-tag " + (spendDelta <= 0 ? "good" : "bad")}>{spendDelta <= 0 ? "↓" : "↑"} {Math.abs(spendDelta)}%</span>}</div>
+          <div className="m-feat-sub">Compared to last month</div>
+          <Sparkline data={spentSeries} color="#7c5cff" />
+        </div>
       </div>
 
       {pending.length > 0 && (

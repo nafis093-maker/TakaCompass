@@ -225,3 +225,69 @@ export function BigDonut({ slices }) {
     </svg>
   );
 }
+
+// ---- Ring donut with floating % bubbles + centre total (reference style) ----
+export function RingDonut({ slices, centerTop, centerSub = "Total" }) {
+  const VB = 240, C = 120, R = 78, sw = 28;
+  const visible = (slices || []).filter((s) => s.amount > 0);
+  const total = visible.reduce((s, x) => s + x.amount, 0) || 1;
+  const p = (ang, rad) => [C + rad * Math.cos(ang), C + rad * Math.sin(ang)];
+  let a = -Math.PI / 2;
+  const GAP = visible.length > 1 ? 0.10 : 0;
+  const segs = visible.map((s) => {
+    const span = (s.amount / total) * 2 * Math.PI;
+    const a0 = a + GAP / 2, a1 = a + span - GAP / 2; a += span;
+    const safe = a1 > a0 ? a1 : a0 + 0.001;
+    const large = (safe - a0) > Math.PI ? 1 : 0;
+    const [x0, y0] = p(a0, R), [x1, y1] = p(safe, R);
+    const mid = (a0 + safe) / 2;
+    const [dx, dy] = p(mid, R);
+    const [lx, ly] = p(mid, R + 24);
+    const pct = Math.round((s.amount / total) * 100);
+    return { d: `M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`, color: s.color, pct, lx, ly, dx, dy, key: s.key };
+  });
+  return (
+    <svg viewBox={`0 0 ${VB} ${VB}`} className="m-ring">
+      <circle cx={C} cy={C} r={R} fill="none" stroke="#eceef6" strokeWidth={sw} />
+      {segs.map((s, i) => (
+        <path key={s.key} d={s.d} fill="none" stroke={s.color} strokeWidth={sw} strokeLinecap="round"
+          pathLength="1" className="m-ring-arc" style={{ animationDelay: (i * 0.14) + "s" }} />
+      ))}
+      <text x={C} y={C - 1} textAnchor="middle" className="m-ring-total">{centerTop}</text>
+      <text x={C} y={C + 18} textAnchor="middle" className="m-ring-sub">{centerSub}</text>
+      {segs.map((s) => {
+        if (s.pct < 3) return null;
+        const str = s.pct + "%";
+        const w = 18 + str.length * 7.5;
+        return (
+          <g key={s.key + "b"} className="m-ring-bub">
+            <circle cx={s.dx.toFixed(1)} cy={s.dy.toFixed(1)} r="3.4" fill={s.color} />
+            <rect x={(s.lx - w / 2).toFixed(1)} y={(s.ly - 12).toFixed(1)} width={w.toFixed(1)} height="23" rx="11.5" fill="#fff" />
+            <text x={s.lx.toFixed(1)} y={(s.ly + 4).toFixed(1)} textAnchor="middle" fill={s.color} className="m-ring-pct">{str}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ---- Mini sparkline for stat cards ----
+export function Sparkline({ data, color = "#0ea372" }) {
+  const W = 150, H = 46, n = (data || []).length;
+  if (!n) return null;
+  const max = Math.max(...data, 1), min = Math.min(...data, 0);
+  const X = (i) => (n === 1 ? W : (i / (n - 1)) * W);
+  const Y = (v) => H - 5 - ((v - min) / ((max - min) || 1)) * (H - 12);
+  const pts = data.map((v, i) => [X(i), Y(v)]);
+  const line = pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+  const area = line + ` L${W} ${H} L0 ${H} Z`;
+  const id = "sp" + Math.random().toString(36).slice(2, 7);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="m-spark" preserveAspectRatio="none">
+      <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={color} stopOpacity=".3" /><stop offset="1" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+      <path d={area} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={pts[n - 1][0].toFixed(1)} cy={pts[n - 1][1].toFixed(1)} r="3.4" fill={color} />
+    </svg>
+  );
+}
