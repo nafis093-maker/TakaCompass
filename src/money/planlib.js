@@ -61,16 +61,16 @@ const TAG = { alert: "ACT NOW", warn: "HEADS UP", opp: "OPPORTUNITY", ok: "NICE"
 
 export function buildInsights(d, taxInvest) {
   const out = [];
-  const card = (level, title, body, action) => out.push({ level, title, body, action, tagText: TAG[level] });
+  const card = (level, title, body, action, weight = 0) => out.push({ level, title, body, action, weight, tagText: TAG[level] });
   const idleCash = Math.max(0, d.liquid - d.essentialMonthly * 6);
 
   if (d.monthlyIncome > 0 && d.surplus < 0)
-    card("alert", "You're spending more than you earn", `This month you're ${tk(-d.surplus)} in the red.`,
-      "Cut your two biggest flexible categories this week, or pause non-essentials until payday.");
+    card("alert", "Spending more than you earn", `You're ${tk(-d.surplus)} in the red this month — outflows beat income.`,
+      "Trim your two biggest flexible categories this week, or pause non-essentials until payday.", 3000000 + (-d.surplus));
 
   if (d.essentialMonthly > 0 && d.emMonths < 3)
-    card("alert", "Emergency fund is thin", `Liquid savings cover only ${d.emMonths.toFixed(1)} months of essentials.`,
-      `Park ${big(d.essentialMonthly * 6)} in cash/FDR before investing anywhere else.`);
+    card("alert", "Emergency fund is thin", `Your cash covers only ${d.emMonths.toFixed(1)} months of essentials — a shock could hurt.`,
+      `Build toward ${big(d.essentialMonthly * 6)} in cash/FDR before investing anywhere else.`, 2000000 + (3 - d.emMonths) * 100000);
   else if (d.essentialMonthly > 0 && d.emMonths < 6)
     card("warn", "Top up the emergency fund", `You're at ${d.emMonths.toFixed(1)} months of cover.`,
       `Auto-save ~${big((d.essentialMonthly * 6 - d.liquid) / 3)}/mo for 3 months to reach the 6-month floor.`);
@@ -81,8 +81,8 @@ export function buildInsights(d, taxInvest) {
       `Put ${big(Math.min(idleCash, pricey.bal))} toward ${pricey.name} principal — a guaranteed ${pricey.rate}% return.`);
 
   if (idleCash > 50000)
-    card("warn", "Idle cash is shrinking", `${big(idleCash)} sits beyond your emergency buffer. At ${RATES.inflation}% inflation that loses ~${tk(idleCash * (RATES.inflation - 1) / 100)} of value this year.`,
-      `Move ${big(idleCash)} into a 5-year Sanchayapatra (~${RATES.sanchayapatra}%) or a 1-year FDR this month.`);
+    card("warn", "Idle cash is losing value", `${big(idleCash)} sits beyond your safety buffer. At ${RATES.inflation}% inflation it loses ~${tk(idleCash * (RATES.inflation - 1) / 100)} this year.`,
+      `Move ${big(idleCash)} into a 5-year Sanchayapatra (~${RATES.sanchayapatra}%) or a 1-year FDR this month.`, 300000 + idleCash / 100);
 
   const rr = realReturn(d.blendedReturn);
   if (d.totalAssets > 0 && rr < 0)
@@ -98,8 +98,8 @@ export function buildInsights(d, taxInvest) {
       "Direct new savings into other buckets until no single one is above ~50%.");
 
   if (d.dti > 40)
-    card("alert", "Over-leveraged", `EMIs eat ${Math.round(d.dti)}% of income — past the 40% ceiling.`,
-      "Avoid new loans; consider refinancing or prepaying the highest-rate one.");
+    card("alert", "Loan load is high", `EMIs eat ${Math.round(d.dti)}% of your income — past the 40% safe ceiling.`,
+      "Avoid new loans; refinance or prepay the highest-rate one to ease the load.", 1000000 + d.dti * 1000);
 
   const room = Math.min(0.2 * d.monthlyIncome * 12, 1000000) - taxInvest;
   if (d.surplus > 0 && room > 20000)
@@ -115,8 +115,8 @@ export function buildInsights(d, taxInvest) {
 
   (d.budgetAlerts || []).slice(0, 2).forEach((b) => {
     if (b.pct >= 100)
-      card("warn", `${b.name} budget is blown`, `You're at ${Math.round(b.pct)}% of your ${big(b.amount)} ${b.name.toLowerCase()} budget this month.`,
-        "Ease off this category for the rest of the month, or raise the budget if it's no longer realistic.");
+      card("warn", `${b.name} budget is blown`, `You've used ${Math.round(b.pct)}% of your ${big(b.amount)} ${b.name.toLowerCase()} budget this month.`,
+        "Ease off this category for the rest of the month, or raise the budget if it's no longer realistic.", 500000 + b.pct * 1000);
     else
       card("warn", `${b.name} budget almost gone`, `${Math.round(b.pct)}% of your ${big(b.amount)} ${b.name.toLowerCase()} budget is used.`,
         `Only ${big(b.amount - b.spent)} left — pace the rest of the month carefully.`);
@@ -128,5 +128,5 @@ export function buildInsights(d, taxInvest) {
 
   if (out.length === 0) card("ok", "Looking steady", "Not enough data yet for tailored insights.",
     "Import a bank statement or add a few transactions to unlock suggestions.");
-  return out.sort((a, b) => LV[a.level] - LV[b.level]);
+  return out.sort((a, b) => LV[a.level] - LV[b.level] || (b.weight || 0) - (a.weight || 0));
 }

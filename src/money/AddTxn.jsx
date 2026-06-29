@@ -1,4 +1,4 @@
-import { srLang } from "./i18n.js";
+import { srLang, t, catLabel } from "./i18n.js";
 import React, { useState, useEffect } from "react";
 import { X, Check, Repeat, Paperclip, Mic } from "lucide-react";
 import { EXPENSE_CATS, INCOME_CATS, uid, today, niceDate } from "./lib.js";
@@ -72,7 +72,7 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-top">
           <button className="sheet-x" onClick={onClose}><X size={22} /></button>
-          <span className="sheet-title">{initial ? "Edit" : "Add"} transaction</span>
+          <span className="sheet-title">{initial ? t("add.edit") : t("add.add")}</span>
           <button className="sheet-ok" onClick={save} disabled={!canSave}><Check size={22} /></button>
         </div>
 
@@ -85,12 +85,12 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
         {!initial && canVoice && (
           <div className="vc-wrap">
             <button className={"vc-btn" + (voice === "listening" ? " on" : "")} onClick={speak} disabled={voice === "listening"}>
-              <Mic size={16} /> {voice === "listening" ? "Listening…" : "Speak to fill"}
+              <Mic size={16} /> {voice === "listening" ? t("add.listening") : t("add.speak")}
             </button>
             {voice === "listening" && <span className="vc-pulse"><i /><i /><i /></span>}
             {heard && voice !== "listening" && <span className="vc-heard">“{heard}”</span>}
-            {voice === "error" && !heard && <span className="vc-err">Didn't catch that — try “spent 200 on lunch”.</span>}
-            {voice === "error" && heard && <span className="vc-err">No amount heard — try again.</span>}
+            {voice === "error" && !heard && <span className="vc-err">{t("add.verr1")}</span>}
+            {voice === "error" && heard && <span className="vc-err">{t("add.verr2")}</span>}
           </div>
         )}
 
@@ -110,7 +110,7 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
               return (
                 <button key={i} className="qa-chip" onClick={() => { setType(s.type || "expense"); setCategory(s.category); setAmount(s.amount); }}>
                   <span className="qac-ic" style={{ background: c.color + "22", color: c.color }}><c.Icon size={15} strokeWidth={2.4} /></span>
-                  {c.label} · ৳{s.amount >= 1000 ? (s.amount / 1000).toFixed(s.amount % 1000 ? 1 : 0) + "k" : s.amount}
+                  {catLabel(c.key, c.label)} · ৳{s.amount >= 1000 ? (s.amount / 1000).toFixed(s.amount % 1000 ? 1 : 0) + "k" : s.amount}
                 </button>
               );
             })}
@@ -118,16 +118,16 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
         )}
 
         <div className="sheet-types">
-          {["expense", "income", "transfer"].map((t) => (
-            <button key={t} className={"st" + (type === t ? " on" : "")} onClick={() => setType(t)}>{t[0].toUpperCase() + t.slice(1)}</button>
+          {["expense", "income", "transfer"].map((ty) => (
+            <button key={ty} className={"st" + (type === ty ? " on" : "")} onClick={() => setType(ty)}>{t("type." + ty)}</button>
           ))}
         </div>
 
         <div className="sheet-body">
           {type === "transfer" ? (
             <div className="sheet-transfer">
-              <label>From<select value={walletId} onChange={(e) => setWalletId(e.target.value)}>{wallets.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
-              <label>To<select value={toWalletId} onChange={(e) => setToWalletId(e.target.value)}>{wallets.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
+              <label>{t("add.from")}<select value={walletId} onChange={(e) => setWalletId(e.target.value)}>{wallets.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
+              <label>{t("add.to")}<select value={toWalletId} onChange={(e) => setToWalletId(e.target.value)}>{wallets.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
             </div>
           ) : (
             <>
@@ -135,29 +135,29 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
                 {cats.map((c) => (
                   <button key={c.key} className={"catbtn" + (category === c.key ? " on" : "")} onClick={() => setCategory(c.key)}>
                     <span className="catic" style={{ background: c.color + "22", color: c.color }}><c.Icon size={20} strokeWidth={2.2} /></span>
-                    <span className="catlbl">{c.label}</span>
+                    <span className="catlbl">{catLabel(c.key, c.label)}</span>
                   </button>
                 ))}
               </div>
-              <label className="sheet-row">Wallet
+              <label className="sheet-row">{t("add.wallet")}
                 <select value={walletId} onChange={(e) => setWalletId(e.target.value)}>{wallets.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select>
               </label>
             </>
           )}
 
-          <label className="sheet-row">Date
+          <label className="sheet-row">{t("add.date")}
             <span className="daterow">
-              <button className={"dtbtn" + (date === today() ? " on" : "")} onClick={() => setDate(today())}>Today</button>
+              <button className={"dtbtn" + (date === today() ? " on" : "")} onClick={() => setDate(today())}>{t("add.today")}</button>
               <input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
             </span>
           </label>
-          <input className="sheet-note" placeholder="Add a note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input className="sheet-note" placeholder={t("add.note")} value={note} onChange={(e) => setNote(e.target.value)} />
 
           {!initial && (
-            <label className="sheet-row"><span className="rr-lbl"><Repeat size={15} /> Repeat</span>
+            <label className="sheet-row"><span className="rr-lbl"><Repeat size={15} /> {t("add.repeat")}</span>
               <span className="daterow">
                 {["none", "weekly", "monthly"].map((f) => (
-                  <button key={f} className={"dtbtn" + (repeat === f ? " on" : "")} onClick={() => setRepeat(f)}>{f === "none" ? "Off" : f[0].toUpperCase() + f.slice(1)}</button>
+                  <button key={f} className={"dtbtn" + (repeat === f ? " on" : "")} onClick={() => setRepeat(f)}>{f === "none" ? t("add.off") : t("freq." + f)}</button>
                 ))}
               </span>
             </label>
@@ -167,17 +167,17 @@ export default function AddTxn({ wallets, onClose, onSave, initial, quick = [] }
             {receipt ? (
               <div className="rcpt-has">
                 <img src={receipt} alt="receipt" />
-                <button onClick={() => setReceipt("")}>Remove receipt</button>
+                <button onClick={() => setReceipt("")}>{t("add.rmRcpt")}</button>
               </div>
             ) : (
-              <label className="rcpt-add"><Paperclip size={15} /> Attach receipt photo
+              <label className="rcpt-add"><Paperclip size={15} /> {t("add.addRcpt")}
                 <input type="file" accept="image/*" style={{ display: "none" }} onChange={pickReceipt} />
               </label>
             )}
           </div>
         </div>
 
-        <button className="sheet-save" onClick={save} disabled={!canSave}>{initial ? "Save changes" : "Add transaction"}</button>
+        <button className="sheet-save" onClick={save} disabled={!canSave}>{initial ? t("add.saveChanges") : t("add.add")}</button>
       </div>
     </div>
   );

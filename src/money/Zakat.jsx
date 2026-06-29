@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { ChevronLeft } from "lucide-react";
 import { walletBalance, kindOf, tk, big } from "./lib.js";
+import { t, useLang, D } from "./i18n.js";
 
 // Buckets that are zakatable (wealth held). "other" is excluded by default.
 const ZAKATABLE = new Set(["cash", "bank", "fdr", "sanchayapatra", "dps", "stocks", "gold"]);
 
 export default function Zakat({ wallets, txns, onClose }) {
+  useLang();
   const buckets = useMemo(() =>
     wallets
       .map((w) => ({ id: w.id, name: w.name, kind: w.kind, amt: walletBalance(w, txns) }))
@@ -26,13 +28,13 @@ export default function Zakat({ wallets, txns, onClose }) {
 
   return (
     <div className="m-app">
-      <div className="ra-bar"><button className="planner-back" onClick={onClose}><ChevronLeft size={18} /> Back</button></div>
+      <div className="ra-bar"><button className="planner-back" onClick={onClose}><ChevronLeft size={18} /> {t("common.back")}</button></div>
       <div className="scr" style={{ paddingTop: 4 }}>
-        <div className="m-title">Zakat calculator</div>
-        <p className="plan-intro">Zakat is 2.5% of your zakatable wealth held for a lunar year, if it's above the nisab threshold. Pick what to include and we'll do the maths. This is an estimate — confirm with a scholar for your situation.</p>
+        <div className="m-title">{t("z.title")}</div>
+        <p className="plan-intro">{t("z.intro")}</p>
 
-        <div className="z-sec">Your wealth</div>
-        {buckets.length === 0 && <p className="m-empty">No positive balances to assess yet.</p>}
+        <div className="z-sec">{t("z.wealth")}</div>
+        {buckets.length === 0 && <p className="m-empty">{t("z.nopos")}</p>}
         {buckets.map((b) => (
           <label className="z-row" key={b.id}>
             <input type="checkbox" checked={!excluded.has(b.id)} onChange={() => toggle(b.id)} />
@@ -41,21 +43,21 @@ export default function Zakat({ wallets, txns, onClose }) {
           </label>
         ))}
 
-        <div className="z-sec">Adjustments</div>
-        <label className="z-inrow">Gold price (৳/gram, 22k)
+        <div className="z-sec">{t("z.adjust")}</div>
+        <label className="z-inrow">{t("z.gold")}
           <span className="m-money sm"><i>৳</i><input inputMode="numeric" value={goldRate} onChange={(e) => setGoldRate(parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
         </label>
-        <label className="z-inrow">Short-term debts to deduct
+        <label className="z-inrow">{t("z.debts")}
           <span className="m-money sm"><i>৳</i><input inputMode="numeric" value={liabilities} onChange={(e) => setLiabilities(parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
         </label>
 
         <div className="z-result">
-          <div className="z-line"><span>Zakatable wealth</span><b>{tk(net)}</b></div>
-          <div className="z-line"><span>Nisab (85g gold)</span><b>{tk(nisab)}</b></div>
+          <div className="z-line"><span>{t("z.zw")}</span><b>{tk(net)}</b></div>
+          <div className="z-line"><span>{t("z.nisab")}</span><b>{tk(nisab)}</b></div>
           <div className={"z-big " + (eligible ? "due" : "na")}>
-            {eligible ? <>Zakat due<br /><span>{tk(zakat)}</span></> : <>Below nisab<br /><span>No zakat due</span></>}
+            {eligible ? <>{t("z.due")}<br /><span>{tk(zakat)}</span></> : <>{t("z.below")}<br /><span>{t("z.nodue")}</span></>}
           </div>
-          {eligible && <p className="z-note">2.5% of {tk(net)}. Nisab uses an 85g gold equivalent at the price above.</p>}
+          {eligible && <p className="z-note">{t("z.note")}</p>}
         </div>
       </div>
     </div>

@@ -391,7 +391,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
         <button className={"m-spotlight " + hero.level} onClick={goPlan}>
           <span className="m-sl-icn">{PRIORITY ? <Info size={20} /> : <Sparkles size={20} />}</span>
           <span className="m-sl-body">
-            <span className="m-sl-tag">{hero.tagText}{PRIORITY ? " · top priority" : ""}</span>
+            <span className="m-sl-tag">{t("tag." + hero.level)}{PRIORITY ? " · " + t("tag.priority") : ""}</span>
             <b>{hero.title}</b>
             <p>{hero.body}</p>
             {hero.action && <p className="m-sl-fix">{hero.action}</p>}
@@ -498,7 +498,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
           <>
             <div className="m-eocard">
               <div className="m-cardhd">
-                <div><b>By category</b><i>{monthLabel(mk)} spending</i></div>
+                <div><b>{t("spend.bycat")}</b><i>{t("spend.cap").replace("{m}", mon(mk))}</i></div>
               </div>
               <div className="m-catlist">
                 {cats.map((c) => (
@@ -516,19 +516,19 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
 
             <div className="m-eocard">
               <div className="m-cardhd">
-                <div><b>Expense overview</b><i>Income vs spending, last 6 months</i></div>
-                <span className="m-pill" onClick={goPlan}>Details ↗</span>
+                <div><b>{t("spend.overview")}</b><i>{t("spend.income")} vs {t("spend.expense")}</i></div>
+                <span className="m-pill" onClick={goPlan}>{t("spend.details")} ↗</span>
               </div>
               <ExpenseOverview data={flow} />
               <div className="m-eoleg">
-                <span><i className="d" style={{ background: "#0ea372" }} /> Income</span>
-                <span><i className="d" style={{ background: "#3b82f6" }} /> Expense</span>
+                <span><i className="d" style={{ background: "#0ea372" }} /> {t("spend.income")}</span>
+                <span><i className="d" style={{ background: "#3b82f6" }} /> {t("spend.expense")}</span>
               </div>
             </div>
 
-            <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> Full breakdown <ChevronRight size={16} /></button>
+            <button className="m-overview" onClick={goPlan}><Sparkles size={16} /> {t("spend.full")} <ChevronRight size={16} /></button>
           </>
-        ) : <p className="m-empty">No spending logged this month yet.</p>
+        ) : <p className="m-empty">{t("spend.none")}</p>
       )}
 
       {seg === "ins" && (
@@ -603,6 +603,7 @@ function Timeline({ data, userName, onEdit, goPlan, openImport, openUpload, open
 }
 
 function Wallets({ data, onAdd, delWallet, delLoan }) {
+  useLang();
   const { wallets, txns, loans = [] } = data;
   const assets = totalWealth(wallets, txns);
   const owed = loans.reduce((s, l) => s + l.bal, 0);
@@ -610,9 +611,9 @@ function Wallets({ data, onAdd, delWallet, delLoan }) {
   const series = useMemo(() => wealthSeries(wallets, txns, 6), [wallets, txns]);
   return (
     <div className="scr">
-      <div className="m-head"><div className="m-bignum"><CountUp value={net} format={tk} /></div><div className="m-sublabel">Net worth · {tk(assets)} assets − {tk(owed)} loans</div></div>
+      <div className="m-head"><div className="m-bignum"><CountUp value={net} format={tk} /></div><div className="m-sublabel">{t("scr.networth")} · {tk(assets)} {t("scr.assets")} − {tk(owed)} {t("scr.loansW")}</div></div>
       <WealthLine data={series} />
-      <div className="plan-sec">Accounts</div>
+      <div className="plan-sec">{t("scr.accounts")}</div>
       <div className="m-list">
         {wallets.map((w) => (
           <div className="m-wallet" key={w.id} onClick={() => { if (confirm("Remove " + w.name + "?")) delWallet(w.id); }}>
@@ -624,7 +625,7 @@ function Wallets({ data, onAdd, delWallet, delLoan }) {
       </div>
       {loans.length > 0 && (
         <>
-          <div className="plan-sec">Loans (you owe)</div>
+          <div className="plan-sec">{t("scr.loans")}</div>
           <div className="m-list">
             {loans.map((l) => (
               <div className="m-wallet" key={l.id} onClick={() => { if (confirm("Remove " + l.name + "?")) delLoan(l.id); }}>
@@ -636,12 +637,13 @@ function Wallets({ data, onAdd, delWallet, delLoan }) {
           </div>
         </>
       )}
-      <button className="m-addrow" onClick={onAdd}><Plus size={18} /> Add account or loan</button>
+      <button className="m-addrow" onClick={onAdd}><Plus size={18} /> {t("scr.addAccountLoan")}</button>
     </div>
   );
 }
 
 function Budgets({ data, addBudget, delBudget }) {
+  useLang();
   const { budgets, txns } = data;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -655,8 +657,8 @@ function Budgets({ data, addBudget, delBudget }) {
   };
   return (
     <div className="scr">
-      <div className="m-title">Budgets</div>
-      {budgets.length === 0 && <p className="m-empty">No budgets yet. Create one to keep spending in check.</p>}
+      <div className="m-title">{t("scr.budgets")}</div>
+      {budgets.length === 0 && <p className="m-empty">{t("bud.none")}</p>}
       <div className="m-list">
         {budgets.map((b) => {
           const spent = budgetSpent(b, txns, mk);
@@ -665,8 +667,8 @@ function Budgets({ data, addBudget, delBudget }) {
           const over = spent > b.amount;
           return (
             <div className="m-budget" key={b.id} onClick={() => { if (confirm("Delete this budget?")) delBudget(b.id); }}>
-              <div className="m-budgethd"><span className="m-bname">{b.name}</span><span className="m-bcat">{b.category === "all" ? "All expenses" : catOf(b.category).label}</span></div>
-              <div className={"m-bleft " + (over ? "neg" : "pos")}>{over ? tk(-left) + " over" : tk(left) + " left"} <small>of {tk(b.amount)}</small></div>
+              <div className="m-budgethd"><span className="m-bname">{b.name}</span><span className="m-bcat">{b.category === "all" ? t("bud.all") : catLabel(b.category, catOf(b.category).label)}</span></div>
+              <div className={"m-bleft " + (over ? "neg" : "pos")}>{over ? tk(-left) + " " + t("scr.over") : tk(left) + " " + t("scr.left")} <small>{t("scr.of")} {tk(b.amount)}</small></div>
               <div className="m-bbar"><span className={over ? "over" : ""} style={{ width: pct + "%" }}>{Math.round((spent / (b.amount || 1)) * 100)}%</span></div>
             </div>
           );
@@ -674,18 +676,18 @@ function Budgets({ data, addBudget, delBudget }) {
       </div>
       {open ? (
         <div className="m-bform">
-          <input placeholder="Budget name" value={name} onChange={(e) => setName(e.target.value)} />
+          <input placeholder={t("bud.name")} value={name} onChange={(e) => setName(e.target.value)} />
           <div className="m-bform-row">
-            <span className="m-money"><i>৳</i><input inputMode="numeric" placeholder="Amount" value={amount || ""} onChange={(e) => setAmount(parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
+            <span className="m-money"><i>৳</i><input inputMode="numeric" placeholder={t("bud.amount")} value={amount || ""} onChange={(e) => setAmount(parseFloat(e.target.value.replace(/[^0-9.]/g, "")) || 0)} /></span>
             <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="all">All expenses</option>
-              {EXPENSE_CATS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+              <option value="all">{t("bud.all")}</option>
+              {EXPENSE_CATS.map((c) => <option key={c.key} value={c.key}>{catLabel(c.key, c.label)}</option>)}
             </select>
           </div>
-          <div className="m-bform-actions"><button className="ghost" onClick={() => setOpen(false)}>Cancel</button><button className="primary" onClick={create}>Create budget</button></div>
+          <div className="m-bform-actions"><button className="ghost" onClick={() => setOpen(false)}>{t("common.cancel")}</button><button className="primary" onClick={create}>{t("bud.create")}</button></div>
         </div>
       ) : (
-        <button className="m-create" onClick={() => setOpen(true)}><Plus size={18} /> Create a new budget</button>
+        <button className="m-create" onClick={() => setOpen(true)}><Plus size={18} /> {t("bud.createNew")}</button>
       )}
     </div>
   );
