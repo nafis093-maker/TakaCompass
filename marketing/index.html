@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hisab — Plan. Track. Grow. | Bangladesh money tracker</title>
+<meta name="description" content="Hisab is a private, Bangla-first money tracker for Bangladesh. Log taka by voice, capture bank & bKash SMS, budget, calculate Zakat and plan savings — all on your phone." />
+<style>
+  :root{
+    --g:#0ea372; --g2:#14b8a6; --tx:#15202b; --mut:#5d6b7a; --bg:#eef6f1; --card:#fff; --line:#e6efe9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  a{color:inherit;text-decoration:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:13px 22px;font-weight:800;font-size:15px;cursor:pointer;border:none}
+  .btn.play{background:linear-gradient(135deg,#0ea372,#14b8a6);color:#fff;box-shadow:0 14px 30px -12px rgba(14,163,114,.6)}
+  .btn.ghost{background:#fff;color:var(--tx);border:1px solid var(--line)}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);background:rgba(238,246,241,.8);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.02em}
+  .brand .mk{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,#16c2a3,#0ea372);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
+  .nav-links{display:flex;gap:26px;align-items:center;font-size:14px;font-weight:600;color:var(--mut)}
+  .nav-links a:hover{color:var(--tx)}
+  @media(max-width:720px){.nav-links{display:none}}
+
+  /* hero */
+  .hero{padding:64px 0 40px}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+  @media(max-width:860px){.hero .wrap{grid-template-columns:1fr;text-align:center}}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:#dff3ea;color:#0a8a5c;border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:800;margin-bottom:18px}
+  h1{font-size:48px;line-height:1.05;letter-spacing:-.03em;font-weight:900}
+  @media(max-width:860px){h1{font-size:38px}}
+  .hero p.lede{font-size:18px;color:var(--mut);margin:18px 0 8px;max-width:520px}
+  @media(max-width:860px){.hero p.lede{margin-left:auto;margin-right:auto}}
+  .hero .bn{font-size:16px;color:#0a8a5c;font-weight:700;margin-bottom:26px}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap}
+  @media(max-width:860px){.cta-row{justify-content:center}}
+  .micro{font-size:12.5px;color:var(--mut);margin-top:14px}
+
+  /* phone */
+  .phone-stage{display:flex;justify-content:center}
+  .phone{width:300px;height:600px;border-radius:40px;background:#0c1a14;padding:9px;box-shadow:0 50px 90px -40px rgba(12,40,28,.6)}
+  .screen{width:100%;height:100%;border-radius:32px;overflow:hidden;background:linear-gradient(180deg,#edf5f1,#f4f8f6);position:relative}
+  .sb{display:flex;justify-content:space-between;padding:13px 20px 4px;font-size:12px;font-weight:800}
+  .pbody{padding:6px 16px}
+  .hello{font-size:22px;font-weight:900;letter-spacing:-.02em;margin-top:4px}
+  .hello .sub{font-size:13px;color:var(--mut);font-weight:600}
+  .mcard{background:#fff;border-radius:22px;padding:14px;margin-top:12px;box-shadow:0 18px 40px -28px rgba(20,90,70,.5)}
+  .mc-top{display:flex;align-items:center;gap:10px}
+  .mc-ic{width:42px;height:42px;border-radius:13px;background:linear-gradient(150deg,#16c2a3,#0ea372);display:flex;align-items:center;justify-content:center;color:#fff}
+  .mc-lbl{font-size:12px;color:var(--mut);font-weight:600}
+  .mc-tot{font-size:24px;font-weight:900;letter-spacing:-.02em}
+  .legend{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+  .lrow{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700}
+  .ldot{width:9px;height:9px;border-radius:50%}
+  .lrow b{margin-left:auto}
+  .fabs{position:absolute;bottom:74px;left:0;right:0;display:flex;justify-content:space-between;padding:0 26px}
+  .fab{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px}
+  .fab.mic{background:linear-gradient(150deg,#16c2a3,#0e9488)}
+  .fab.add{background:linear-gradient(150deg,#14c08a,#0a8f63)}
+  .nav2{position:absolute;left:14px;right:14px;bottom:12px;height:52px;background:#fff;border-radius:22px;box-shadow:0 16px 30px -16px rgba(20,90,70,.4);display:flex;justify-content:space-around;align-items:center}
+  .nav2 i{width:20px;height:20px;border-radius:6px;background:#cdd8d2}
+  .nav2 i.on{background:#0ea372}
+
+  /* trust strip */
+  .trust{background:#0c2a20;color:#cdeede}
+  .trust .wrap{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;padding:18px 20px;font-size:13.5px;font-weight:700}
+  .trust b{color:#8ff0c8}
+
+  /* features */
+  section.feat{padding:64px 0}
+  .sec-head{text-align:center;max-width:640px;margin:0 auto 44px}
+  .sec-head h2{font-size:34px;letter-spacing:-.02em;font-weight:900}
+  .sec-head p{color:var(--mut);font-size:16px;margin-top:10px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 44px -34px rgba(20,90,70,.5)}
+  .card .ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;background:#e3f6ee}
+  .card h3{font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .card p{color:var(--mut);font-size:14.5px;margin-top:7px}
+
+  /* big cta */
+  .cta{padding:20px 0 80px}
+  .cta .box{background:linear-gradient(140deg,#0ea372,#0a6e52);border-radius:30px;padding:48px 28px;text-align:center;color:#fff;box-shadow:0 40px 80px -40px rgba(14,163,114,.7)}
+  .cta h2{font-size:32px;font-weight:900;letter-spacing:-.02em}
+  .cta p{opacity:.92;margin:12px auto 24px;max-width:520px}
+  .cta .btn.play{background:#fff;color:#0a6e52}
+
+  footer{padding:34px 0;border-top:1px solid var(--line);color:var(--mut);font-size:13.5px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+  footer a{color:var(--mut)}
+  footer a:hover{color:var(--tx)}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="brand"><span class="mk">৳</span> Hisab</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#why">Why Hisab</a>
+    <a href="#privacy">Privacy</a>
+    <a class="btn play" href="#get" style="padding:9px 16px;font-size:14px">Get the app</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <span class="pill">🇧🇩 Built for Bangladesh · বাংলায় ও English</span>
+    <h1>Your money,<br/>finally in order.</h1>
+    <p class="lede">Hisab tracks your taka the easy way — speak it, pull it from an SMS, or tap it in. See where your money goes, budget smarter, and plan the big stuff.</p>
+    <p class="bn">কথা বলে খরচ লিখুন। বাজেট, যাকাত ও সঞ্চয় — সব আপনার ফোনেই।</p>
+    <div class="cta-row" id="get">
+      <a class="btn play" href="#">▶ Get it on Google Play</a>
+      <a class="btn ghost" href="#features">See features</a>
+    </div>
+    <div class="micro">No account needed · No bank login · Your data stays on your phone.</div>
+  </div>
+
+  <div class="phone-stage">
+    <div class="phone"><div class="screen">
+      <div class="sb"><span>9:41</span><span>৳ ▦ 🔔</span></div>
+      <div class="pbody">
+        <div class="hello">Hello 👋<div class="sub">Here's your money snapshot 😊</div></div>
+        <div class="mcard">
+          <div class="mc-top">
+            <span class="mc-ic">👛</span>
+            <div><div class="mc-lbl">Total Amount</div><div class="mc-tot">৳35.1L</div></div>
+          </div>
+          <div style="display:flex;justify-content:center;margin:6px 0">
+            <svg width="150" height="150" viewBox="0 0 42 42">
+              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#eef0f6" stroke-width="6"/>
+              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#8b7cf0" stroke-width="6" stroke-dasharray="40 100" stroke-linecap="round" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#0ea372" stroke-width="6" stroke-dasharray="38 100" stroke-dashoffset="-40" stroke-linecap="round" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#14b8a6" stroke-width="6" stroke-dasharray="20 100" stroke-dashoffset="-78" stroke-linecap="round" transform="rotate(-90 21 21)"/>
+              <text x="21" y="20" text-anchor="middle" font-size="5" font-weight="900" fill="#15202b">৳35.1L</text>
+              <text x="21" y="26" text-anchor="middle" font-size="2.6" fill="#8a94a0">Total</text>
+            </svg>
+          </div>
+          <div class="legend">
+            <div class="lrow"><span class="ldot" style="background:#8b7cf0"></span> Shopping <b>৳24k</b></div>
+            <div class="lrow"><span class="ldot" style="background:#0ea372"></span> Bills & Fees <b>৳12k</b></div>
+            <div class="lrow"><span class="ldot" style="background:#14b8a6"></span> Food <b>৳8k</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="fabs"><div class="fab mic">🎤</div><div class="fab add">＋</div></div>
+      <div class="nav2"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    </div></div>
+  </div>
+</div></header>
+
+<div class="trust"><div class="wrap">
+  <span>🎤 Voice add in <b>বাংলা</b></span>
+  <span>📩 Reads <b>bKash / Nagad / bank</b> SMS</span>
+  <span>🕌 <b>Zakat</b> calculator</span>
+  <span>🔒 <b>On-device</b> — no servers</span>
+</div></div>
+
+<section class="feat" id="features"><div class="wrap">
+  <div class="sec-head">
+    <h2>Everything to run your money</h2>
+    <p>Fast to log, clear to read, and tuned for how money actually works in Bangladesh.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="ic">🎤</div><h3>Add by voice</h3><p>Say "৫০০ দুপুরের খাবার" or "got salary 50000" — Hisab fills the amount, type and category. বাংলা and English.</p></div>
+    <div class="card"><div class="ic">📩</div><h3>SMS capture</h3><p>Turns bank, bKash and Nagad transaction texts into ready-to-confirm entries. You approve; nothing is sent anywhere.</p></div>
+    <div class="card"><div class="ic">📊</div><h3>See where it goes</h3><p>A clean home with your total, this month by category, savings rate, and your single most important money move up top.</p></div>
+    <div class="card"><div class="ic">💰</div><h3>Budgets that nudge</h3><p>Set monthly limits per category and get a heads-up before you overspend — not after.</p></div>
+    <div class="card"><div class="ic">🕌</div><h3>Zakat calculator</h3><p>Choose what counts, set the gold rate, and get your 2.5% above nisab — estimated in seconds.</p></div>
+    <div class="card"><div class="ic">📈</div><h3>Plan ahead</h3><p>Emergency fund, DPS/FDR maturities, Sanchayapatra, loan EMIs, tax-rebate room and goals — at Bangladeshi rates.</p></div>
+  </div>
+</div></section>
+
+<section class="feat" id="why" style="padding-top:0"><div class="wrap">
+  <div class="sec-head">
+    <h2>Why people pick Hisab</h2>
+    <p>Most money apps want your bank login and your data. Hisab doesn't.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="ic" id="privacy">🔒</div><h3>Private by design</h3><p>No account, no bank login, no cloud. Your numbers live on your phone — continue as a guest and start in seconds.</p></div>
+    <div class="card"><div class="ic">🇧🇩</div><h3>Truly local</h3><p>Taka (৳) throughout, Bangla numerals, bKash/Nagad context, Zakat and local deposit products — not a foreign app bolted on.</p></div>
+    <div class="card"><div class="ic">✨</div><h3>Hisab Wrapped</h3><p>Your month in money, animated and shareable — a fun way to see (and share) your progress.</p></div>
+  </div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="box">
+    <h2>Start tracking in 30 seconds</h2>
+    <p>Free, private, and made for Bangladesh. No sign-up required — just open and go.</p>
+    <a class="btn play" href="#">▶ Get it on Google Play</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div class="brand"><span class="mk">৳</span> Hisab — Plan. Track. Grow.</div>
+  <div style="display:flex;gap:18px">
+    <a href="/privacy">Privacy</a>
+    <a href="#features">Features</a>
+    <a href="mailto:hello@example.com">Contact</a>
+  </div>
+</div></footer>
+
+</body>
+</html>

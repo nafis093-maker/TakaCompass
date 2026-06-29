@@ -1,0 +1,74 @@
+name: Android Release (signed AAB)
+
+# Builds a Play-ready, signed Android App Bundle (.aab) and a signed .apk.
+# Trigger manually from the Actions tab; set the version each run.
+on:
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: "Version name shown to users (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+      versionCode:
+        description: "Integer version code — must increase every upload"
+        required: true
+        default: "1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Sync Capacitor (Android)
+        run: npx cap sync android
+
+      - name: Decode upload keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload.keystore
+          echo "Keystore written ($(stat -c%s android/app/upload.keystore) bytes)"
+
+      - name: Build signed AAB + APK
+        working-directory: android
+        run: |
+          ./gradlew bundleRelease assembleRelease \
+            -PVERSION_NAME="${{ github.event.inputs.versionName }}" \
+            -PVERSION_CODE="${{ github.event.inputs.versionCode }}" \
+            -PRELEASE_STORE_FILE="upload.keystore" \
+            -PRELEASE_STORE_PASSWORD="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -PRELEASE_KEY_ALIAS="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -PRELEASE_KEY_PASSWORD="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f android/app/upload.keystore
+
+      - name: Upload AAB (for Play Console)
+        uses: actions/upload-artifact@v4
+        with:
+          name: hisab-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload APK (for direct install / sideload)
+        uses: actions/upload-artifact@v4
+        with:
+          name: hisab-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
