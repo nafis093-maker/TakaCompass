@@ -941,3 +941,108 @@
 .m-sl-body p { font-size: 13px; line-height: 1.4; margin: 0; opacity: .9; }
 .m-sl-fix { font-weight: 700; margin-top: 4px !important; }
 .m-sl-go { align-self: center; flex: none; opacity: .65; }
+
+/* =========================================================
+   PRODUCTION MOTION SYSTEM — trendy, springy, subtle
+   ========================================================= */
+:root { --spring: cubic-bezier(.2,.8,.2,1); --springy: cubic-bezier(.16,1,.3,1); }
+
+/* ---- screen entrance: staggered fade-up on every tab switch ---- */
+.m-screen > * { animation: rise .5s var(--springy) both; }
+.m-screen > *:nth-child(1) { animation-delay: .02s; }
+.m-screen > *:nth-child(2) { animation-delay: .07s; }
+.m-screen > *:nth-child(3) { animation-delay: .12s; }
+.m-screen > *:nth-child(4) { animation-delay: .17s; }
+.m-screen > *:nth-child(5) { animation-delay: .22s; }
+.m-screen > *:nth-child(6) { animation-delay: .27s; }
+.m-screen > *:nth-child(7) { animation-delay: .32s; }
+.m-screen > *:nth-child(8) { animation-delay: .37s; }
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* ---- universal press feedback ---- */
+.m-app button { transition: transform .16s var(--spring), box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease; }
+.m-app button:active:not(:disabled) { transform: scale(.96); }
+
+/* ---- cards: lift on hover (pointer devices) ---- */
+@media (hover: hover) {
+  .m-maincard:hover, .m-featcard:hover, .m-eocard:hover, .m-list:hover, .m-spotlight:hover { transform: translateY(-3px); box-shadow: 0 26px 54px -28px rgba(20,90,70,.5); }
+}
+.m-maincard, .m-featcard, .m-eocard, .m-list, .m-spotlight { transition: transform .25s var(--spring), box-shadow .25s ease; }
+
+/* ---- category / legend rows ---- */
+.m-mc-catrow, .m-catrow, .m-dleg-row, .m-wallet, .m-budget { transition: background-color .18s ease, transform .18s var(--spring); border-radius: 12px; }
+.m-mc-catrow:active, .m-catrow:active, .m-wallet:active, .m-budget:active { transform: scale(.985); }
+@media (hover: hover) {
+  .m-mc-catrow:hover, .m-catrow:hover { background: #f4faf7; }
+  .m-mc-catrow:hover .m-mc-chev { transform: translateX(3px); }
+}
+.m-mc-chev { transition: transform .2s var(--spring); }
+.m-catic { transition: transform .2s var(--spring); }
+.m-mc-catrow:hover .m-catic, .m-catrow:hover .m-catic { transform: scale(1.08) rotate(-4deg); }
+
+/* ---- FABs: lift, squash, mic pulse ---- */
+.m-fab, .m-fab2, .m-fab-mic { transition: transform .18s var(--spring), box-shadow .2s ease; }
+@media (hover: hover) { .m-fab:hover, .m-fab-mic:hover, .m-fab2:hover { transform: translateY(-3px) scale(1.04); } }
+.m-fab:active, .m-fab-mic:active, .m-fab2:active { transform: scale(.9); }
+.m-fab-mic { position: fixed; }
+.m-fab-mic::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 0 rgba(20,194,163,.5); animation: micping 2.4s ease-out infinite; pointer-events: none; }
+@keyframes micping { 0% { box-shadow: 0 0 0 0 rgba(20,194,163,.45); } 70% { box-shadow: 0 0 0 16px rgba(20,194,163,0); } 100% { box-shadow: 0 0 0 0 rgba(20,194,163,0); } }
+.m-fab { animation: fabin .5s var(--springy) .25s both; }
+.m-fab-mic { animation: fabin .5s var(--springy) .32s both; }
+@keyframes fabin { from { opacity: 0; transform: translateY(20px) scale(.7); } to { opacity: 1; transform: none; } }
+
+/* ---- bottom nav: icon pop + smooth color ---- */
+.m-navi svg { transition: transform .25s var(--springy); }
+.m-navi.on svg { transform: translateY(-2px) scale(1.12); }
+.m-navi.on::after { animation: dotin .3s var(--springy) both; }
+@keyframes dotin { from { transform: scale(0); } to { transform: scale(1); } }
+
+/* ---- sheets: springy slide-up + dimmed blur backdrop ---- */
+.sheet-overlay { animation: fadein .22s ease both; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.sheet { animation: sheetspring .45s var(--springy) both; }
+@keyframes sheetspring { from { transform: translateY(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---- segmented control: smooth active swap ---- */
+.m-toggle button { transition: background .25s ease, color .2s ease, transform .16s var(--spring), box-shadow .25s ease; }
+.m-toggle button.on { animation: segpop .3s var(--springy); }
+@keyframes segpop { 0% { transform: scale(.94); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+/* ---- month dropdown pop ---- */
+.m-monthmenu { transform-origin: top right; animation: menupop .26s var(--springy) both; }
+@keyframes menupop { from { opacity: 0; transform: scale(.85) translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* ---- wrapped pill: shine sweep ---- */
+.m-wrap-pill { position: relative; overflow: hidden; }
+.m-wrap-pill::after { content: ""; position: absolute; top: 0; left: -130%; width: 60%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); transform: skewX(-20deg); animation: pillshine 3.6s ease-in-out infinite; }
+@keyframes pillshine { 0%, 65% { left: -130%; } 100% { left: 170%; } }
+
+/* ---- spotlight insight: gentle icon float + cta nudge ---- */
+.m-sl-icn { animation: floaty 3.4s ease-in-out infinite; }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.m-ins-cta svg, .m-sl-go svg { transition: transform .2s var(--spring); }
+@media (hover: hover) { .m-insight:hover .m-ins-cta svg, .m-spotlight:hover .m-sl-go svg { transform: translateX(3px); } }
+
+/* ---- inputs: soft focus ring ---- */
+.sheet input, .sheet select, .m-app input, .m-app select { transition: box-shadow .2s ease, border-color .2s ease; }
+.sheet input:focus, .sheet select:focus, .m-app input:focus, .m-app select:focus { box-shadow: 0 0 0 3px rgba(14,163,114,.16); outline: none; }
+
+/* ---- toast: bounce in ---- */
+.m-toast { animation: toastin .4s var(--springy) both; }
+@keyframes toastin { from { opacity: 0; transform: translate(-50%, 16px) scale(.92); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+
+/* ---- progress bars: animate width ---- */
+.m-fbar i, .m-bbar span { transition: width .8s var(--springy); }
+
+/* ---- delta + feat tags: pop in ---- */
+.m-delta, .m-feat-tag { animation: tagin .4s var(--springy) .3s both; }
+@keyframes tagin { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+
+/* ---- sparklines draw feel ---- */
+.m-spark { animation: fadein .8s ease .35s both; }
+
+/* ---- respect reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .m-screen > *, .m-fab, .m-fab-mic, .m-wrap-pill::after, .m-fab-mic::after, .m-sl-icn, .m-delta, .m-feat-tag, .m-spark, .sheet, .sheet-overlay, .m-monthmenu, .m-toast { animation: none !important; }
+  .m-app button, .m-maincard, .m-featcard, .m-eocard, .m-list, .m-spotlight { transition: none !important; }
+}

@@ -3,48 +3,76 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Hisab — Plan. Track. Grow. | Bangladesh money tracker</title>
-<meta name="description" content="Hisab is a private, Bangla-first money tracker for Bangladesh. Log taka by voice, capture bank & bKash SMS, budget, calculate Zakat and plan savings — all on your phone." />
+<title>Hisab — Plan. Track. Grow. | Bangladesh money app</title>
+<meta name="description" content="Hisab is a private, Bangla-first money app for Bangladesh. Log taka by voice, capture bKash/Nagad/bank SMS, budget, calculate Zakat and plan savings — all on your phone." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --g:#0ea372; --g2:#14b8a6; --tx:#15202b; --mut:#5d6b7a; --bg:#eef6f1; --card:#fff; --line:#e6efe9;
+    --g:#0ea372; --g2:#14b8a6; --cy:#06b6d4; --lime:#b6f23d; --pop:#ff6ec4;
+    --tx:#12211b; --mut:#5f6f67; --bg:#eaf6ef; --card:#fff; --line:#e2efe8;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
-  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
   a{color:inherit;text-decoration:none}
-  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:13px 22px;font-weight:800;font-size:15px;cursor:pointer;border:none}
-  .btn.play{background:linear-gradient(135deg,#0ea372,#14b8a6);color:#fff;box-shadow:0 14px 30px -12px rgba(14,163,114,.6)}
-  .btn.ghost{background:#fff;color:var(--tx);border:1px solid var(--line)}
+  h1,h2,h3,.disp{font-family:"Space Grotesk",Inter,sans-serif}
 
-  /* nav */
-  nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);background:rgba(238,246,241,.8);border-bottom:1px solid var(--line)}
-  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.02em}
-  .brand .mk{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,#16c2a3,#0ea372);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:14px 24px;font-weight:800;font-size:15px;cursor:pointer;border:none;transition:transform .15s ease,box-shadow .2s ease}
+  .btn:active{transform:scale(.96)}
+  .btn.play{position:relative;background:linear-gradient(110deg,#0ea372,#14b8a6 50%,#06b6d4);color:#fff;box-shadow:0 16px 34px -12px rgba(14,163,114,.6);overflow:hidden}
+  .btn.play::after{content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
+  @keyframes shine{0%,60%{left:-120%}100%{left:160%}}
+  .btn.play:hover{transform:translateY(-2px);box-shadow:0 22px 44px -12px rgba(14,163,114,.7)}
+  .btn.ghost{background:#fff;color:var(--tx);border:1px solid var(--line)}
+  .btn.ghost:hover{transform:translateY(-2px)}
+
+  /* floating gradient blobs */
+  .blob{position:fixed;border-radius:50%;filter:blur(70px);opacity:.5;z-index:0;pointer-events:none}
+  .b1{width:380px;height:380px;background:#27d39a;top:-120px;left:-100px;animation:float1 16s ease-in-out infinite}
+  .b2{width:340px;height:340px;background:#22d3ee;top:140px;right:-120px;animation:float2 19s ease-in-out infinite}
+  .b3{width:300px;height:300px;background:var(--lime);bottom:-120px;left:20%;animation:float3 22s ease-in-out infinite;opacity:.35}
+  .b4{width:260px;height:260px;background:var(--pop);bottom:120px;right:18%;animation:float1 18s ease-in-out infinite;opacity:.25}
+  @keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-40px)}}
+  @keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,30px)}}
+  @keyframes float3{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,20px)}}
+  .content{position:relative;z-index:1}
+
+  nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);background:rgba(234,246,239,.72);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em;font-family:"Space Grotesk"}
+  .brand .mk{width:36px;height:36px;border-radius:11px;background:linear-gradient(150deg,#16c2a3,#0ea372);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 8px 18px -8px rgba(14,163,114,.6)}
   .nav-links{display:flex;gap:26px;align-items:center;font-size:14px;font-weight:600;color:var(--mut)}
   .nav-links a:hover{color:var(--tx)}
-  @media(max-width:720px){.nav-links{display:none}}
+  @media(max-width:760px){.nav-links a:not(.btn){display:none}}
 
   /* hero */
-  .hero{padding:64px 0 40px}
-  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
-  @media(max-width:860px){.hero .wrap{grid-template-columns:1fr;text-align:center}}
-  .pill{display:inline-flex;align-items:center;gap:7px;background:#dff3ea;color:#0a8a5c;border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:800;margin-bottom:18px}
-  h1{font-size:48px;line-height:1.05;letter-spacing:-.03em;font-weight:900}
-  @media(max-width:860px){h1{font-size:38px}}
-  .hero p.lede{font-size:18px;color:var(--mut);margin:18px 0 8px;max-width:520px}
-  @media(max-width:860px){.hero p.lede{margin-left:auto;margin-right:auto}}
+  .hero{padding:60px 0 30px}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:center}
+  @media(max-width:880px){.hero .wrap{grid-template-columns:1fr;text-align:center}}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);color:#0a8a5c;border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:800;margin-bottom:20px;box-shadow:0 8px 18px -12px rgba(20,90,70,.4)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:#19c37d;box-shadow:0 0 0 0 rgba(25,195,125,.6);animation:ping 1.8s ease-out infinite}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(25,195,125,.55)}100%{box-shadow:0 0 0 10px rgba(25,195,125,0)}}
+  h1{font-size:54px;line-height:1.02;letter-spacing:-.03em;font-weight:700}
+  @media(max-width:880px){h1{font-size:40px}}
+  .rot{display:inline-block;position:relative;background:linear-gradient(100deg,#0ea372,#14b8a6,#06b6d4);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% auto;animation:flow 4s linear infinite}
+  @keyframes flow{to{background-position:200% center}}
+  .hero p.lede{font-size:18px;color:var(--mut);margin:20px 0 8px;max-width:520px}
+  @media(max-width:880px){.hero p.lede{margin-left:auto;margin-right:auto}}
   .hero .bn{font-size:16px;color:#0a8a5c;font-weight:700;margin-bottom:26px}
   .cta-row{display:flex;gap:12px;flex-wrap:wrap}
-  @media(max-width:860px){.cta-row{justify-content:center}}
-  .micro{font-size:12.5px;color:var(--mut);margin-top:14px}
+  @media(max-width:880px){.cta-row{justify-content:center}}
+  .micro{font-size:12.5px;color:var(--mut);margin-top:14px;display:flex;gap:14px;flex-wrap:wrap}
+  @media(max-width:880px){.micro{justify-content:center}}
+  .micro span{display:inline-flex;align-items:center;gap:5px}
 
   /* phone */
-  .phone-stage{display:flex;justify-content:center}
-  .phone{width:300px;height:600px;border-radius:40px;background:#0c1a14;padding:9px;box-shadow:0 50px 90px -40px rgba(12,40,28,.6)}
-  .screen{width:100%;height:100%;border-radius:32px;overflow:hidden;background:linear-gradient(180deg,#edf5f1,#f4f8f6);position:relative}
+  .phone-stage{display:flex;justify-content:center;perspective:1200px}
+  .phone{width:300px;height:600px;border-radius:42px;background:#0c1a14;padding:9px;box-shadow:0 60px 100px -45px rgba(12,40,28,.65);animation:bob 6s ease-in-out infinite;position:relative}
+  @keyframes bob{0%,100%{transform:translateY(0) rotateZ(-1deg)}50%{transform:translateY(-16px) rotateZ(1deg)}}
+  .screen{width:100%;height:100%;border-radius:33px;overflow:hidden;background:linear-gradient(180deg,#edf5f1,#f4f8f6);position:relative}
   .sb{display:flex;justify-content:space-between;padding:13px 20px 4px;font-size:12px;font-weight:800}
   .pbody{padding:6px 16px}
   .hello{font-size:22px;font-weight:900;letter-spacing:-.02em;margin-top:4px}
@@ -54,156 +82,262 @@
   .mc-ic{width:42px;height:42px;border-radius:13px;background:linear-gradient(150deg,#16c2a3,#0ea372);display:flex;align-items:center;justify-content:center;color:#fff}
   .mc-lbl{font-size:12px;color:var(--mut);font-weight:600}
   .mc-tot{font-size:24px;font-weight:900;letter-spacing:-.02em}
-  .legend{margin-top:12px;display:flex;flex-direction:column;gap:9px}
+  .legend{margin-top:10px;display:flex;flex-direction:column;gap:9px}
   .lrow{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700}
   .ldot{width:9px;height:9px;border-radius:50%}
   .lrow b{margin-left:auto}
+  .ring{animation:ringin .9s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes ringin{from{opacity:0;transform:scale(.82) rotate(-12deg)}to{opacity:1;transform:none}}
   .fabs{position:absolute;bottom:74px;left:0;right:0;display:flex;justify-content:space-between;padding:0 26px}
-  .fab{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px}
+  .fab{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;box-shadow:0 14px 26px -10px rgba(20,90,70,.5)}
   .fab.mic{background:linear-gradient(150deg,#16c2a3,#0e9488)}
   .fab.add{background:linear-gradient(150deg,#14c08a,#0a8f63)}
   .nav2{position:absolute;left:14px;right:14px;bottom:12px;height:52px;background:#fff;border-radius:22px;box-shadow:0 16px 30px -16px rgba(20,90,70,.4);display:flex;justify-content:space-around;align-items:center}
   .nav2 i{width:20px;height:20px;border-radius:6px;background:#cdd8d2}
   .nav2 i.on{background:#0ea372}
+  /* floating voice chip */
+  .vchip{position:absolute;left:-26px;top:120px;background:#0c1a14;color:#eafff5;border-radius:16px;padding:10px 14px;font-size:13px;font-weight:700;box-shadow:0 22px 40px -16px rgba(12,40,28,.6);animation:bob 6s ease-in-out infinite reverse;min-width:188px}
+  .vchip .mic{color:#7ef0c0}
+  .vchip .cap{color:#7ef0c0}
+  .vchip .typed::after{content:"|";animation:caret 1s steps(1) infinite;color:#7ef0c0}
+  @keyframes caret{50%{opacity:0}}
+  .pchip{position:absolute;right:-22px;top:300px;background:#fff;border-radius:14px;padding:9px 12px;font-size:12.5px;font-weight:800;box-shadow:0 22px 40px -16px rgba(20,90,70,.4);display:flex;align-items:center;gap:7px;animation:bob 7s ease-in-out infinite}
+  .pchip .e{width:26px;height:26px;border-radius:8px;background:#fde9d9;display:flex;align-items:center;justify-content:center}
 
-  /* trust strip */
-  .trust{background:#0c2a20;color:#cdeede}
-  .trust .wrap{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;padding:18px 20px;font-size:13.5px;font-weight:700}
-  .trust b{color:#8ff0c8}
+  /* marquee */
+  .marq{margin-top:34px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+  .marq .track{display:flex;gap:14px;width:max-content;animation:scroll 26s linear infinite}
+  .marq .tag{background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:13.5px;font-weight:700;white-space:nowrap;color:#16332a}
+  @keyframes scroll{to{transform:translateX(-50%)}}
 
-  /* features */
-  section.feat{padding:64px 0}
-  .sec-head{text-align:center;max-width:640px;margin:0 auto 44px}
-  .sec-head h2{font-size:34px;letter-spacing:-.02em;font-weight:900}
+  /* stats */
+  .stats{padding:46px 0}
+  .stats .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:760px){.stats .grid{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:#0c2a20;color:#cdeede;border-radius:20px;padding:22px 18px;text-align:center}
+  .stat .n{font-family:"Space Grotesk";font-size:30px;font-weight:700;color:#8ff0c8;letter-spacing:-.02em}
+  .stat .l{font-size:12.5px;font-weight:600;opacity:.85;margin-top:4px}
+
+  section.feat{padding:56px 0}
+  .sec-head{text-align:center;max-width:660px;margin:0 auto 40px}
+  .sec-head .kick{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#13a877}
+  .sec-head h2{font-size:36px;letter-spacing:-.02em;font-weight:700;margin-top:8px}
   .sec-head p{color:var(--mut);font-size:16px;margin-top:10px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-  @media(max-width:860px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 44px -34px rgba(20,90,70,.5)}
-  .card .ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;background:#e3f6ee}
-  .card h3{font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:860px){.grid3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:0 20px 44px -34px rgba(20,90,70,.5);transition:transform .2s ease,box-shadow .2s ease}
+  .card:hover{transform:translateY(-6px);box-shadow:0 30px 54px -30px rgba(20,90,70,.55)}
+  .card .ic{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;background:#e3f6ee}
+  .card h3{font-size:19px;font-weight:700;letter-spacing:-.01em}
   .card p{color:var(--mut);font-size:14.5px;margin-top:7px}
 
-  /* big cta */
-  .cta{padding:20px 0 80px}
-  .cta .box{background:linear-gradient(140deg,#0ea372,#0a6e52);border-radius:30px;padding:48px 28px;text-align:center;color:#fff;box-shadow:0 40px 80px -40px rgba(14,163,114,.7)}
-  .cta h2{font-size:32px;font-weight:900;letter-spacing:-.02em}
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:s}
+  @media(max-width:860px){.steps{grid-template-columns:1fr}}
+  .step{position:relative;background:#fff;border:1px solid var(--line);border-radius:24px;padding:26px 22px}
+  .step::before{counter-increment:s;content:counter(s);font-family:"Space Grotesk";font-weight:700;font-size:15px;width:34px;height:34px;border-radius:50%;background:linear-gradient(150deg,#16c2a3,#0ea372);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .step h3{font-size:18px;font-weight:700}
+  .step p{color:var(--mut);font-size:14.5px;margin-top:6px}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+
+  .cta{padding:24px 0 84px}
+  .cta .box{position:relative;overflow:hidden;background:linear-gradient(135deg,#0ea372,#0a6e52);border-radius:34px;padding:54px 28px;text-align:center;color:#fff;box-shadow:0 44px 90px -44px rgba(14,163,114,.75)}
+  .cta .box .spark{position:absolute;font-size:22px;opacity:.5;animation:bob 5s ease-in-out infinite}
+  .cta h2{font-size:34px;font-weight:700;letter-spacing:-.02em}
   .cta p{opacity:.92;margin:12px auto 24px;max-width:520px}
   .cta .btn.play{background:#fff;color:#0a6e52}
+  .cta .btn.play::after{background:linear-gradient(100deg,transparent,rgba(10,110,82,.18),transparent)}
 
   footer{padding:34px 0;border-top:1px solid var(--line);color:var(--mut);font-size:13.5px}
   footer .wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
-  footer a{color:var(--mut)}
   footer a:hover{color:var(--tx)}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
 
+<div class="content">
 <nav><div class="wrap">
   <div class="brand"><span class="mk">৳</span> Hisab</div>
   <div class="nav-links">
     <a href="#features">Features</a>
+    <a href="#how">How it works</a>
     <a href="#why">Why Hisab</a>
-    <a href="#privacy">Privacy</a>
-    <a class="btn play" href="#get" style="padding:9px 16px;font-size:14px">Get the app</a>
+    <a class="btn play" href="#get" style="padding:10px 18px;font-size:14px">Get the app</a>
   </div>
 </div></nav>
 
 <header class="hero"><div class="wrap">
   <div>
-    <span class="pill">🇧🇩 Built for Bangladesh · বাংলায় ও English</span>
-    <h1>Your money,<br/>finally in order.</h1>
-    <p class="lede">Hisab tracks your taka the easy way — speak it, pull it from an SMS, or tap it in. See where your money goes, budget smarter, and plan the big stuff.</p>
-    <p class="bn">কথা বলে খরচ লিখুন। বাজেট, যাকাত ও সঞ্চয় — সব আপনার ফোনেই।</p>
+    <span class="pill"><span class="dot"></span> Made in 🇧🇩 · বাংলা + English</span>
+    <h1>Track your <span class="rot" id="rot">খরচ</span><br/>without the boring part.</h1>
+    <p class="lede">Speak it, snap an SMS, or tap it in — Hisab logs your taka in seconds and shows you exactly where it's going. 💸</p>
+    <p class="bn">কথা বলে খরচ লিখুন। বাজেট, যাকাত, সঞ্চয় — সব আপনার ফোনেই।</p>
     <div class="cta-row" id="get">
       <a class="btn play" href="#">▶ Get it on Google Play</a>
-      <a class="btn ghost" href="#features">See features</a>
+      <a class="btn ghost" href="#features">Peek the features ✨</a>
     </div>
-    <div class="micro">No account needed · No bank login · Your data stays on your phone.</div>
+    <div class="micro">
+      <span>🔒 No bank login</span><span>🪪 No account</span><span>📵 Stays on your phone</span>
+    </div>
   </div>
 
   <div class="phone-stage">
-    <div class="phone"><div class="screen">
-      <div class="sb"><span>9:41</span><span>৳ ▦ 🔔</span></div>
-      <div class="pbody">
-        <div class="hello">Hello 👋<div class="sub">Here's your money snapshot 😊</div></div>
-        <div class="mcard">
-          <div class="mc-top">
-            <span class="mc-ic">👛</span>
-            <div><div class="mc-lbl">Total Amount</div><div class="mc-tot">৳35.1L</div></div>
-          </div>
-          <div style="display:flex;justify-content:center;margin:6px 0">
-            <svg width="150" height="150" viewBox="0 0 42 42">
-              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#eef0f6" stroke-width="6"/>
-              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#8b7cf0" stroke-width="6" stroke-dasharray="40 100" stroke-linecap="round" transform="rotate(-90 21 21)"/>
-              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#0ea372" stroke-width="6" stroke-dasharray="38 100" stroke-dashoffset="-40" stroke-linecap="round" transform="rotate(-90 21 21)"/>
-              <circle cx="21" cy="21" r="15.5" fill="none" stroke="#14b8a6" stroke-width="6" stroke-dasharray="20 100" stroke-dashoffset="-78" stroke-linecap="round" transform="rotate(-90 21 21)"/>
-              <text x="21" y="20" text-anchor="middle" font-size="5" font-weight="900" fill="#15202b">৳35.1L</text>
-              <text x="21" y="26" text-anchor="middle" font-size="2.6" fill="#8a94a0">Total</text>
-            </svg>
-          </div>
-          <div class="legend">
-            <div class="lrow"><span class="ldot" style="background:#8b7cf0"></span> Shopping <b>৳24k</b></div>
-            <div class="lrow"><span class="ldot" style="background:#0ea372"></span> Bills & Fees <b>৳12k</b></div>
-            <div class="lrow"><span class="ldot" style="background:#14b8a6"></span> Food <b>৳8k</b></div>
+    <div class="phone">
+      <div class="vchip">🎤 <span class="cap">Listening…</span><br/><span class="typed" id="typed"></span></div>
+      <div class="pchip"><span class="e">🍔</span> Food · ৳500 ✓</div>
+      <div class="screen">
+        <div class="sb"><span>9:41</span><span>৳ ▦ 🔔</span></div>
+        <div class="pbody">
+          <div class="hello">Hello 👋<div class="sub">Here's your money snapshot 😊</div></div>
+          <div class="mcard">
+            <div class="mc-top"><span class="mc-ic">👛</span><div><div class="mc-lbl">Total Amount</div><div class="mc-tot">৳35.1L</div></div></div>
+            <div style="display:flex;justify-content:center;margin:6px 0">
+              <svg class="ring" width="150" height="150" viewBox="0 0 42 42">
+                <circle cx="21" cy="21" r="15.5" fill="none" stroke="#eef0f6" stroke-width="6"/>
+                <circle class="seg s1" cx="21" cy="21" r="15.5" pathLength="1" fill="none" stroke="#8b7cf0" stroke-width="6" stroke-dasharray=".4 1" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 21 21)"/>
+                <circle class="seg s2" cx="21" cy="21" r="15.5" pathLength="1" fill="none" stroke="#0ea372" stroke-width="6" stroke-dasharray=".38 1" stroke-dashoffset="-.4" stroke-linecap="round" transform="rotate(-90 21 21)"/>
+                <circle class="seg s3" cx="21" cy="21" r="15.5" pathLength="1" fill="none" stroke="#14b8a6" stroke-width="6" stroke-dasharray=".2 1" stroke-dashoffset="-.78" stroke-linecap="round" transform="rotate(-90 21 21)"/>
+                <text x="21" y="20" text-anchor="middle" font-size="5" font-weight="900" fill="#15202b">৳35.1L</text>
+                <text x="21" y="26" text-anchor="middle" font-size="2.6" fill="#8a94a0">Total</text>
+              </svg>
+            </div>
+            <div class="legend">
+              <div class="lrow"><span class="ldot" style="background:#8b7cf0"></span> Shopping <b>৳24k</b></div>
+              <div class="lrow"><span class="ldot" style="background:#0ea372"></span> Bills & Fees <b>৳12k</b></div>
+              <div class="lrow"><span class="ldot" style="background:#14b8a6"></span> Food <b>৳8k</b></div>
+            </div>
           </div>
         </div>
+        <div class="fabs"><div class="fab mic">🎤</div><div class="fab add">＋</div></div>
+        <div class="nav2"><i class="on"></i><i></i><i></i><i></i><i></i></div>
       </div>
-      <div class="fabs"><div class="fab mic">🎤</div><div class="fab add">＋</div></div>
-      <div class="nav2"><i class="on"></i><i></i><i></i><i></i><i></i></div>
-    </div></div>
+    </div>
+  </div>
+
+  <div class="marq" style="grid-column:1/-1">
+    <div class="track">
+      <span class="tag">🎤 Voice add</span><span class="tag">📩 bKash & Nagad SMS</span><span class="tag">🕌 Zakat</span><span class="tag">💰 Budgets</span><span class="tag">📈 DPS / FDR planning</span><span class="tag">✨ Hisab Wrapped</span><span class="tag">🔒 On-device</span><span class="tag">৳ Bangla numerals</span>
+      <span class="tag">🎤 Voice add</span><span class="tag">📩 bKash & Nagad SMS</span><span class="tag">🕌 Zakat</span><span class="tag">💰 Budgets</span><span class="tag">📈 DPS / FDR planning</span><span class="tag">✨ Hisab Wrapped</span><span class="tag">🔒 On-device</span><span class="tag">৳ Bangla numerals</span>
+    </div>
   </div>
 </div></header>
 
-<div class="trust"><div class="wrap">
-  <span>🎤 Voice add in <b>বাংলা</b></span>
-  <span>📩 Reads <b>bKash / Nagad / bank</b> SMS</span>
-  <span>🕌 <b>Zakat</b> calculator</span>
-  <span>🔒 <b>On-device</b> — no servers</span>
-</div></div>
+<section class="stats"><div class="wrap"><div class="grid">
+  <div class="stat reveal"><div class="n"><span data-count="3">0</span></div><div class="l">ways to add — voice, SMS, tap</div></div>
+  <div class="stat reveal d1"><div class="n"><span data-count="2">0</span> langs</div><div class="l">বাংলা & English</div></div>
+  <div class="stat reveal d2"><div class="n"><span data-count="100">0</span>%</div><div class="l">on your device</div></div>
+  <div class="stat reveal d3"><div class="n"><span data-count="0">0</span></div><div class="l">bank logins needed</div></div>
+</div></div></section>
 
 <section class="feat" id="features"><div class="wrap">
-  <div class="sec-head">
-    <h2>Everything to run your money</h2>
-    <p>Fast to log, clear to read, and tuned for how money actually works in Bangladesh.</p>
+  <div class="sec-head reveal">
+    <div class="kick">Everything in one app</div>
+    <h2>Built for how Bangladesh actually spends</h2>
+    <p>Fast to log, easy to read, and tuned to taka, bKash, Zakat and local deposits.</p>
   </div>
-  <div class="grid">
-    <div class="card"><div class="ic">🎤</div><h3>Add by voice</h3><p>Say "৫০০ দুপুরের খাবার" or "got salary 50000" — Hisab fills the amount, type and category. বাংলা and English.</p></div>
-    <div class="card"><div class="ic">📩</div><h3>SMS capture</h3><p>Turns bank, bKash and Nagad transaction texts into ready-to-confirm entries. You approve; nothing is sent anywhere.</p></div>
-    <div class="card"><div class="ic">📊</div><h3>See where it goes</h3><p>A clean home with your total, this month by category, savings rate, and your single most important money move up top.</p></div>
-    <div class="card"><div class="ic">💰</div><h3>Budgets that nudge</h3><p>Set monthly limits per category and get a heads-up before you overspend — not after.</p></div>
-    <div class="card"><div class="ic">🕌</div><h3>Zakat calculator</h3><p>Choose what counts, set the gold rate, and get your 2.5% above nisab — estimated in seconds.</p></div>
-    <div class="card"><div class="ic">📈</div><h3>Plan ahead</h3><p>Emergency fund, DPS/FDR maturities, Sanchayapatra, loan EMIs, tax-rebate room and goals — at Bangladeshi rates.</p></div>
+  <div class="grid3">
+    <div class="card reveal"><div class="ic">🎤</div><h3>Add by voice</h3><p>Say "৫০০ দুপুরের খাবার" or "got salary 50000" — Hisab fills the amount, type & category. বাংলা and English.</p></div>
+    <div class="card reveal d1"><div class="ic">📩</div><h3>SMS capture</h3><p>Bank, bKash & Nagad texts become ready-to-confirm entries. You tap approve — nothing leaves your phone.</p></div>
+    <div class="card reveal d2"><div class="ic">📊</div><h3>See where it goes</h3><p>Total, this-month-by-category, savings rate, and your #1 money move right at the top.</p></div>
+    <div class="card reveal"><div class="ic">💰</div><h3>Budgets that nudge</h3><p>Monthly limits per category with a simple bar — a heads-up before you overspend, not after.</p></div>
+    <div class="card reveal d1"><div class="ic">🕌</div><h3>Zakat calculator</h3><p>Pick what counts, set the gold rate, get your 2.5% above nisab — in seconds.</p></div>
+    <div class="card reveal d2"><div class="ic">✨</div><h3>Hisab Wrapped</h3><p>Your month in money, animated and shareable. Flex your savings streak. 🚀</p></div>
+  </div>
+</div></section>
+
+<section class="feat" id="how" style="padding-top:0"><div class="wrap">
+  <div class="sec-head reveal"><div class="kick">Stupidly simple</div><h2>From "ugh, money" to done in 3 taps</h2></div>
+  <div class="steps">
+    <div class="step reveal"><h3>Open — no sign-up</h3><p>Tap in as a guest. No account, no bank login, no friction. You're in.</p></div>
+    <div class="step reveal d1"><h3>Add in seconds</h3><p>Speak it, let it read your SMS, or tap a quick chip. Hisab sorts the category for you.</p></div>
+    <div class="step reveal d2"><h3>Watch it click</h3><p>Your donut, budgets and insights update live — and tell you the one thing to fix next.</p></div>
   </div>
 </div></section>
 
 <section class="feat" id="why" style="padding-top:0"><div class="wrap">
-  <div class="sec-head">
-    <h2>Why people pick Hisab</h2>
-    <p>Most money apps want your bank login and your data. Hisab doesn't.</p>
-  </div>
-  <div class="grid">
-    <div class="card"><div class="ic" id="privacy">🔒</div><h3>Private by design</h3><p>No account, no bank login, no cloud. Your numbers live on your phone — continue as a guest and start in seconds.</p></div>
-    <div class="card"><div class="ic">🇧🇩</div><h3>Truly local</h3><p>Taka (৳) throughout, Bangla numerals, bKash/Nagad context, Zakat and local deposit products — not a foreign app bolted on.</p></div>
-    <div class="card"><div class="ic">✨</div><h3>Hisab Wrapped</h3><p>Your month in money, animated and shareable — a fun way to see (and share) your progress.</p></div>
+  <div class="sec-head reveal"><div class="kick">No catch</div><h2>Private by default. Local by design.</h2><p>Most money apps want your bank login and sell your data. Hisab does neither.</p></div>
+  <div class="grid3">
+    <div class="card reveal"><div class="ic">🔒</div><h3>Yours only</h3><p>No cloud, no account. Your numbers live on your phone. "Clear all data" wipes everything, instantly.</p></div>
+    <div class="card reveal d1"><div class="ic">🇧🇩</div><h3>Truly local</h3><p>Taka (৳), Bangla numerals, bKash/Nagad context, Zakat and Sanchayapatra/DPS — not a foreign app bolted on.</p></div>
+    <div class="card reveal d2"><div class="ic">⚡</div><h3>Genuinely fast</h3><p>Lightweight, works offline, opens instantly. Logging an expense takes less time than reading this.</p></div>
   </div>
 </div></section>
 
-<section class="cta"><div class="wrap">
-  <div class="box">
-    <h2>Start tracking in 30 seconds</h2>
-    <p>Free, private, and made for Bangladesh. No sign-up required — just open and go.</p>
-    <a class="btn play" href="#">▶ Get it on Google Play</a>
-  </div>
-</div></section>
+<section class="cta"><div class="wrap"><div class="box">
+  <span class="spark" style="top:18px;left:8%">✨</span><span class="spark" style="bottom:20px;right:10%;animation-delay:1.5s">💸</span><span class="spark" style="top:40px;right:18%;animation-delay:.8s">🪙</span>
+  <h2>Your money era starts now ✨</h2>
+  <p>Free, private, and made for Bangladesh. No sign-up — open and go.</p>
+  <a class="btn play" href="#">▶ Get it on Google Play</a>
+</div></div></section>
 
 <footer><div class="wrap">
   <div class="brand"><span class="mk">৳</span> Hisab — Plan. Track. Grow.</div>
   <div style="display:flex;gap:18px">
-    <a href="/privacy">Privacy</a>
-    <a href="#features">Features</a>
-    <a href="mailto:hello@example.com">Contact</a>
+    <a href="/privacy">Privacy</a><a href="#features">Features</a><a href="mailto:hello@example.com">Contact</a>
   </div>
 </div></footer>
+</div>
 
+<script>
+  // rotating headline word
+  (function(){
+    var words=["খরচ","savings","your budget","Zakat","সঞ্চয়","every taka"];
+    var el=document.getElementById("rot"),i=0;
+    setInterval(function(){
+      i=(i+1)%words.length;
+      el.style.opacity=0;el.style.transform="translateY(8px)";
+      setTimeout(function(){el.textContent=words[i];el.style.transition="opacity .35s,transform .35s";el.style.opacity=1;el.style.transform="none";},220);
+    },2200);
+  })();
+
+  // typing voice demo
+  (function(){
+    var el=document.getElementById("typed");
+    var phrases=["৫০০ দুপুরের খাবার","got salary 50000","bill 1200 ✓","রিকশা ৩০০"];
+    var p=0;
+    function type(){
+      var txt=phrases[p],n=0;
+      var add=setInterval(function(){
+        el.textContent=txt.slice(0,n++);
+        if(n>txt.length){clearInterval(add);setTimeout(erase,1100);}
+      },70);
+    }
+    function erase(){
+      var cur=el.textContent;
+      var del=setInterval(function(){
+        cur=cur.slice(0,-1);el.textContent=cur;
+        if(!cur){clearInterval(del);p=(p+1)%phrases.length;setTimeout(type,260);}
+      },36);
+    }
+    type();
+  })();
+
+  // scroll reveal
+  (function(){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});
+    },{threshold:.18});
+    document.querySelectorAll(".reveal").forEach(function(n){io.observe(n);});
+  })();
+
+  // count-up stats
+  (function(){
+    var seen=new WeakSet();
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(!e.isIntersecting||seen.has(e.target))return;seen.add(e.target);
+        var target=+e.target.getAttribute("data-count"),cur=0,steps=28,inc=target/steps;
+        var t=setInterval(function(){cur+=inc;if(cur>=target){cur=target;clearInterval(t);}e.target.textContent=Math.round(cur);},26);
+      });
+    },{threshold:.6});
+    document.querySelectorAll("[data-count]").forEach(function(n){io.observe(n);});
+  })();
+</script>
 </body>
 </html>

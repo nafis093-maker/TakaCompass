@@ -264,7 +264,7 @@ export default function MoneyApp({ user, onSignOut, onReauth }) {
 
   return (
     <div className="m-app">
-      <div className="m-screen">
+      <div className="m-screen" key={tab}>
         {tab === "timeline" && <Timeline data={data} userName={user.name} onEdit={(t) => { setEditing(t); setAdding(true); }} goPlan={() => setTab("plan")} openImport={() => setImporting(true)} openUpload={() => setUploading(true)} openAdd={() => { setEditing(null); setAdding(true); }} onAddAccount={() => setAddAcct(true)} onSample={loadSample} onCsv={exportCsv} openRecurring={() => setRecurringOpen(true)} openWrapped={() => setWrappedOpen(true)} openReview={() => setReviewOpen(true)} />}
         {tab === "wallets" && <Wallets data={data} onAdd={() => setAddAcct(true)} delWallet={delWallet} delLoan={delLoan} />}
         {tab === "budgets" && <Budgets data={data} addBudget={addBudget} delBudget={delBudget} />}
